@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Environment Variables (Secrets) - CRITICAL to keep these ignored
+.env
+client/.env
+server/.env
+
+# Build Artifacts
+/dist
+/build
+
+# IDE / Editor Files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
