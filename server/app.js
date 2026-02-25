@@ -9,15 +9,9 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 
+// Enkel hälsningsroute för att testa att servern fungerar
 app.get('/', (req, res) => {
     res.json({ message: 'Backend fungerar!' });
 });
-
-function sayHello(name) {
-    console.log('Hello from' + name)
-}
-
-sayHello('Madi')
-
 
 module.exports = app;

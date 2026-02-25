@@ -1,8 +1,11 @@
-const express = require('express'); // Hämtar Express.
-const router = express.Router(); // Skapar en router-modul.
-const authController = require('../controllers/authController'); // Hämtar logiken vi nyss skrev.
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
 
-// Kopplar adressen /register till funktionen registerUser:
-router.post('/register', authController.registerUser); 
+// Adress: POST http://localhost:3000/api/auth/register
+router.post('/register', authController.registerUser);
 
-module.exports = router; // Exporterar vägvisaren.
+// Adress: POST http://localhost:3000/api/auth/login
+router.post('/login', authController.loginUser);
+
+module.exports = router;

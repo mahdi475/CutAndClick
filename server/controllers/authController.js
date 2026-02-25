@@ -1,38 +1,42 @@
-const supabase = require('../config/db'); // Hämtar din anslutning till Supabase.
+const supabase = require('../config/db');
 
-async function registerUser(req, res) { // En asynkron funktion för att skapa användare.
-    const { email, password, username, location } = req.body; // Hämtar data som skickas från Thunder Client/Frontend.
+// --- REGISTRERING ---
+async function registerUser(req, res) {
+    const { email, password, username, location } = req.body;
 
-    try { // Vi gör ett försök att köra koden.
-        // Steg A: Skapa användaren i Supabase Auth (för själva inloggningen)
-        const { data: authData, error: authError } = await supabase.auth.signUp({ 
-            email: email, 
-            password: password 
-        }); // Anropar Supabase molntjänst.
+    try {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email, password
+        });
 
-        if (authError) { // Om något gick fel med mejl/lösenord...
-            return res.status(400).json({ error: authError.message }); // ...skicka tillbaka felet direkt.
-        }
+        if (authError) return res.status(400).json({ error: authError.message });
 
-        // Steg B: Skapa profilen i din nyskapade 'public.users' tabell
         const { error: dbError } = await supabase.from('users').insert([
-            { 
-                id: authData.user.id, // Använder det unika ID:t vi nyss fick från Steg A.
-                username: username, // Sparar användarnamnet i din tabell.
-                location: location, // Sparar platsen i din tabell.
-                role: 'customer' // Sätter rollen till kund som standard.
-            }
-        ]); // Skickar datan till din tabell i Supabase.
+            { id: authData.user.id, username, location, role: 'customer' }
+        ]);
 
-        if (dbError) { // Om det blev fel när vi sparade i din tabell...
-            return res.status(400).json({ error: dbError.message }); // ...visa vad som gick fel.
-        }
+        if (dbError) return res.status(400).json({ error: dbError.message });
 
-        res.status(201).json({ message: 'Succé! Användare och profil skapad.' }); // Skickar tillbaka ett glatt meddelande till dig!
-
-    } catch (err) { // Fångar upp om något annat oväntat kraschar.
-        res.status(500).json({ error: 'Något gick fel på servern' }); 
+        res.status(201).json({ message: 'Kontot är skapat!' });
+    } catch (err) {
+        res.status(500).json({ error: 'Serverfel vid registrering' });
     }
 }
 
-module.exports = { registerUser }; // Exporterar funktionen så att Routes kan använda den.
+async function loginUser(req, res) {
+    const { email, password } = req.body;
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email, password
+        });
+
+        if (error) return res.status(401).json({ error: 'Fel mejl eller lösenord' });
+
+        res.status(200).json({ message: 'Välkommen in!', session: data.session });
+    } catch (err) {
+        res.status(500).json({ error: 'Serverfel vid inloggning' });
+    }
+}
+
+module.exports = { registerUser, loginUser };
