@@ -18,4 +18,20 @@ async function getAllItems(req, res) {
     res.status(200).json(data);
 }
 
-module.exports = { getAllHaircuts, getAllItems };
+// Skapa ett nytt klipp-inlägg (kräver inloggning – protect sätter req.user)
+async function createHaircut(req, res) {
+    const { title, description, price, time_taken, image_url } = req.body;
+
+    // user_id comes automatically from the logged-in user
+    const user_id = req.user.id;
+
+    const { data, error } = await supabase.from('haircut_posts').insert([
+        { user_id, title, description, price, time_taken, image_url }
+    ]).select();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.status(201).json(data[0]);
+}
+
+module.exports = { getAllHaircuts, getAllItems, createHaircut };

@@ -1,12 +1,53 @@
-import React from 'react';
-import { Lock, LogIn } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, LogIn, Loader2 } from 'lucide-react';
 
 interface LoginPageProps {
-    onLogin: () => void;
+    onLogin: (email: string) => void;
     onSignUp?: () => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!email || !password) {
+            setError('Fyll i både email och lösenord');
+            return;
+        }
+
+        setError('');
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error || 'Inloggning misslyckades');
+                setLoading(false);
+                return;
+            }
+
+            // Store the session token for future API calls
+            if (data.session?.access_token) {
+                localStorage.setItem('access_token', data.session.access_token);
+            }
+
+            onLogin(email);
+        } catch (err) {
+            setError('Kunde inte nå servern');
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="w-full min-h-screen relative bg-white overflow-hidden flex flex-col items-center justify-center py-10">
 
@@ -27,17 +68,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                     <p className="text-gray-500 mt-2">Welcome back to Cut & Click</p>
                 </div>
 
+                {/* --- Error Message --- */}
+                {error && (
+                    <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-inter">
+                        {error}
+                    </div>
+                )}
+
                 {/* --- Form Inputs --- */}
                 <div className="flex flex-col gap-5 mb-8">
                     {/* Email */}
                     <div className="w-full h-[65px] bg-[#FCFCFC] rounded-[15px] border border-black/50 flex items-center px-6 transition-colors focus-within:border-black">
                         <div className="w-[24px] flex justify-center mr-3">
-                            {/* Placeholder for user icon */}
                             <div className="w-5 h-5 rounded-full border border-black/30 bg-gray-100"></div>
                         </div>
                         <input
                             type="email"
                             placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                             className="w-full bg-transparent outline-none text-black/70 font-inter font-light text-[15px] placeholder:text-black/40"
                         />
                     </div>
@@ -49,7 +99,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                         </div>
                         <input
                             type="password"
-                            placeholder="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                             className="w-full bg-transparent outline-none text-black/70 font-inter font-light text-[15px] placeholder:text-black/40"
                         />
                     </div>
@@ -58,13 +111,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                 {/* --- Login Button --- */}
                 <div className="flex justify-end mb-12">
                     <button
-                        onClick={onLogin}
-                        className="w-[120px] h-[54px] bg-[#363636]/90 rounded-[15px] flex items-center justify-between px-5 hover:bg-black transition-colors active:scale-95 shadow-md"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="w-[120px] h-[54px] bg-[#363636]/90 rounded-[15px] flex items-center justify-between px-5 hover:bg-black transition-colors active:scale-95 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <span className="text-white font-inter font-bold text-[18px]">login</span>
-                        <div>
-                            <LogIn size={18} className="text-white" />
-                        </div>
+                        {loading ? (
+                            <Loader2 size={20} className="text-white animate-spin mx-auto" />
+                        ) : (
+                            <>
+                                <span className="text-white font-inter font-bold text-[18px]">login</span>
+                                <div>
+                                    <LogIn size={18} className="text-white" />
+                                </div>
+                            </>
+                        )}
                     </button>
                 </div>
 
@@ -72,7 +132,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                 <div className="flex flex-col gap-4 mb-8">
                     {/* Google */}
                     <button className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group">
-                        {/* Icon Box */}
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 24 24" className="w-6 h-6">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -86,7 +145,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
 
                     {/* Apple */}
                     <button className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group">
-                        {/* Icon Box */}
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 384 512" className="w-6 h-6 fill-black">
                                 <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 52.3-11.4 69.5-34.3z" />

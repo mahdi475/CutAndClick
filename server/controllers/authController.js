@@ -39,4 +39,20 @@ async function loginUser(req, res) {
     }
 }
 
-module.exports = { registerUser, loginUser };
+// --- PROFIL ---
+// GET /api/auth/profile — hämtar den inloggade användarens profilinfo
+async function getProfile(req, res) {
+    const user_id = req.user.id;
+
+    const { data, error } = await supabase
+        .from('users')
+        .select('id, username, location, role')
+        .eq('id', user_id)
+        .single();
+
+    if (error) return res.status(404).json({ error: 'Profil hittades inte' });
+
+    res.status(200).json(data);
+}
+
+module.exports = { registerUser, loginUser, getProfile };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Home, Compass, Heart, User, History, LogOut } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import BarberDetailPage from './pages/BarberDetailPage';
@@ -11,12 +11,26 @@ import ProfilePage from './pages/ProfilePage';
 import StartupPage from './pages/StartupPage';
 import LoginPage from './pages/LoginPage';
 import BookingConfirmedPage from './pages/BookingConfirmedPage';
+import Toast from './components/ui/Toast';
 import { BarberShop, Product, Service } from './types';
 
 const App: React.FC = () => {
   // State for Startup/Onboarding and Login
   const [showStartup, setShowStartup] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
+
+  // Toast state
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToastVisible(false);
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'favourites' | 'profile'>('home');
   const [selectedBarber, setSelectedBarber] = useState<BarberShop | null>(null);
@@ -27,19 +41,22 @@ const App: React.FC = () => {
 
   // --- Startup Handlers ---
   const handleStartupFinish = () => {
+    // Guest mode
     setShowStartup(false);
     setShowLogin(false);
+    showToast('Logged in as Guest');
   };
-  
+
   const handleRegister = () => {
     // Navigate from Startup to Login page
     setShowStartup(false);
     setShowLogin(true);
   };
 
-  const handleLogin = () => {
+  const handleLogin = (email?: string) => {
     // Complete login, go to home
     setShowLogin(false);
+    showToast(`Logged in as ${email || 'account'}`);
   };
 
   const handleSignOut = () => {
@@ -70,7 +87,7 @@ const App: React.FC = () => {
     setIsBookingConfirmed(false);
     setActiveTab('home'); // Ensure tab resets to home
   };
-  
+
   const handleSeeAllServices = () => {
     setViewingStoreServices(true);
   };
@@ -104,20 +121,20 @@ const App: React.FC = () => {
   const handleTabChange = (tab: 'home' | 'history' | 'favourites' | 'profile') => {
     // If clicking Home while on Home tab and deep in navigation, reset to root
     if (tab === 'home' && activeTab === 'home' && selectedBarber) {
-        handleBackToHome();
-        return;
+      handleBackToHome();
+      return;
     }
 
     setActiveTab(tab);
     // Reset navigation stack when changing tabs
     if (tab !== 'home' || selectedBarber) {
-       if (tab !== 'home') {
-         setSelectedBarber(null);
-         setViewingStoreServices(false);
-       }
-       setSelectedItem(null);
-       setIsBooking(false);
-       setIsBookingConfirmed(false);
+      if (tab !== 'home') {
+        setSelectedBarber(null);
+        setViewingStoreServices(false);
+      }
+      setSelectedItem(null);
+      setIsBooking(false);
+      setIsBookingConfirmed(false);
     }
   };
 
@@ -132,7 +149,7 @@ const App: React.FC = () => {
     }
 
     if (showLogin) {
-      return <LoginPage onLogin={handleLogin} onSignUp={handleLogin} />;
+      return <LoginPage onLogin={handleLogin} onSignUp={() => handleLogin()} />;
     }
 
     if (isBookingConfirmed) {
@@ -140,34 +157,34 @@ const App: React.FC = () => {
     }
 
     if (isBooking && selectedItem) {
-        return <BookingPage item={selectedItem} onBack={handleBackFromBooking} onConfirm={handleBookingConfirm} />;
+      return <BookingPage item={selectedItem} onBack={handleBackFromBooking} onConfirm={handleBookingConfirm} />;
     }
 
     if (selectedItem) {
-        return <ProductDetailPage item={selectedItem} onBack={handleBackFromItem} onBookNow={handleBookNow} />;
+      return <ProductDetailPage item={selectedItem} onBack={handleBackFromItem} onBookNow={handleBookNow} />;
     }
 
     if (activeTab === 'home') {
-        if (selectedBarber) {
-            if (viewingStoreServices) {
-                return <StoreServicesPage barber={selectedBarber} onBack={handleBackToBarber} onItemClick={handleItemClick} />;
-            }
-            return (
-                <BarberDetailPage 
-                    barber={selectedBarber} 
-                    onBack={handleBackToHome} 
-                    onSeeAllProducts={handleSeeAllServices}
-                    onProductClick={handleItemClick}
-                />
-            );
+      if (selectedBarber) {
+        if (viewingStoreServices) {
+          return <StoreServicesPage barber={selectedBarber} onBack={handleBackToBarber} onItemClick={handleItemClick} />;
         }
-        return <HomePage onBarberClick={handleBarberClick} />;
+        return (
+          <BarberDetailPage
+            barber={selectedBarber}
+            onBack={handleBackToHome}
+            onSeeAllProducts={handleSeeAllServices}
+            onProductClick={handleItemClick}
+          />
+        );
+      }
+      return <HomePage onBarberClick={handleBarberClick} />;
     }
 
     if (activeTab === 'history') return <HistoryPage onBack={handleBackToHome} />;
-    
+
     if (activeTab === 'favourites') return <FavouritesPage onItemClick={handleItemClick} onBack={handleBackToHome} />;
-    
+
     if (activeTab === 'profile') return <ProfilePage onBack={handleBackToHome} onSignOut={handleSignOut} />;
 
     return null;
@@ -177,53 +194,58 @@ const App: React.FC = () => {
   const isFullScreenModal = showStartup || showLogin;
 
   if (isFullScreenModal) {
-    return renderContent();
+    return (
+      <>
+        {renderContent()}
+        <Toast message={toastMessage} visible={toastVisible} onClose={hideToast} />
+      </>
+    );
   }
 
   return (
     <div className="flex h-screen w-full bg-white lg:bg-gray-100 lg:p-8 font-sans overflow-hidden">
-      
+
       {/* --- Desktop Sidebar (Hidden on Mobile/Tablet) --- */}
       <div className="hidden lg:flex flex-col w-64 h-full bg-white rounded-[30px] shadow-sm mr-6 p-6 justify-between flex-shrink-0">
-         <div>
-            <div className="mb-10 px-4">
-               <h1 className="font-montserrat font-bold text-2xl text-[#2F2F2F]">Cut & Click</h1>
-            </div>
-            <nav className="flex flex-col gap-4">
-                <button 
-                  onClick={() => handleTabChange('home')}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'home' && !selectedBarber && !selectedItem ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
-                >
-                   <Home size={24} />
-                   <span className="font-inter font-medium text-[16px]">Home</span>
-                </button>
-                <button 
-                  onClick={() => handleTabChange('history')}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'history' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
-                >
-                   <History size={24} />
-                   <span className="font-inter font-medium text-[16px]">History</span>
-                </button>
-                <button 
-                  onClick={() => handleTabChange('favourites')}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'favourites' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
-                >
-                   <Heart size={24} />
-                   <span className="font-inter font-medium text-[16px]">Favorites</span>
-                </button>
-                <button 
-                  onClick={() => handleTabChange('profile')}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
-                >
-                   <User size={24} />
-                   <span className="font-inter font-medium text-[16px]">Profile</span>
-                </button>
-            </nav>
-         </div>
-         <button onClick={handleSignOut} className="flex items-center gap-4 px-4 py-3 text-[#FF4A4A] hover:bg-red-50 rounded-xl transition-colors">
-            <LogOut size={24} />
-            <span className="font-inter font-medium text-[16px]">Sign Out</span>
-         </button>
+        <div>
+          <div className="mb-10 px-4">
+            <h1 className="font-montserrat font-bold text-2xl text-[#2F2F2F]">Cut & Click</h1>
+          </div>
+          <nav className="flex flex-col gap-4">
+            <button
+              onClick={() => handleTabChange('home')}
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'home' && !selectedBarber && !selectedItem ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
+            >
+              <Home size={24} />
+              <span className="font-inter font-medium text-[16px]">Home</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('history')}
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'history' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
+            >
+              <History size={24} />
+              <span className="font-inter font-medium text-[16px]">History</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('favourites')}
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'favourites' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
+            >
+              <Heart size={24} />
+              <span className="font-inter font-medium text-[16px]">Favorites</span>
+            </button>
+            <button
+              onClick={() => handleTabChange('profile')}
+              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
+            >
+              <User size={24} />
+              <span className="font-inter font-medium text-[16px]">Profile</span>
+            </button>
+          </nav>
+        </div>
+        <button onClick={handleSignOut} className="flex items-center gap-4 px-4 py-3 text-[#FF4A4A] hover:bg-red-50 rounded-xl transition-colors">
+          <LogOut size={24} />
+          <span className="font-inter font-medium text-[16px]">Sign Out</span>
+        </button>
       </div>
 
       {/* --- Main Content Wrapper --- */}
@@ -232,7 +254,7 @@ const App: React.FC = () => {
           Desktop: flex-1 (Takes remaining space), rounded corners, shadow
       */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-white lg:rounded-[30px] lg:shadow-2xl">
-        
+
         {/* Scrollable Content Area */}
         <div className={`h-full overflow-y-auto no-scrollbar ${shouldShowBottomNav ? 'pb-24 lg:pb-0' : ''}`}>
           {renderContent()}
@@ -241,14 +263,14 @@ const App: React.FC = () => {
         {/* --- Mobile/Tablet Bottom Navigation (Hidden on Desktop) --- */}
         {shouldShowBottomNav && (
           <div className="absolute bottom-0 w-full h-[90px] bg-white border-t border-gray-100 flex justify-around items-center px-6 pb-2 z-50 lg:hidden">
-            
-            <button 
+
+            <button
               onClick={() => handleTabChange('home')}
               className="flex flex-col items-center justify-center w-12 h-12 relative"
             >
-              <Home 
-                size={24} 
-                color={activeTab === 'home' && !selectedBarber && !selectedItem ? '#2F2F2F' : '#848282'} 
+              <Home
+                size={24}
+                color={activeTab === 'home' && !selectedBarber && !selectedItem ? '#2F2F2F' : '#848282'}
                 strokeWidth={activeTab === 'home' && !selectedBarber && !selectedItem ? 2.5 : 2}
               />
               {(activeTab === 'home' && !selectedBarber && !selectedItem) && (
@@ -256,13 +278,13 @@ const App: React.FC = () => {
               )}
             </button>
 
-            <button 
+            <button
               onClick={() => handleTabChange('history')}
               className="flex flex-col items-center justify-center w-12 h-12 relative"
             >
-              <History 
-                size={24} 
-                color={activeTab === 'history' ? '#2F2F2F' : '#848282'} 
+              <History
+                size={24}
+                color={activeTab === 'history' ? '#2F2F2F' : '#848282'}
                 strokeWidth={activeTab === 'history' ? 2.5 : 2}
               />
               {activeTab === 'history' && (
@@ -270,13 +292,13 @@ const App: React.FC = () => {
               )}
             </button>
 
-            <button 
+            <button
               onClick={() => handleTabChange('favourites')}
               className="flex flex-col items-center justify-center w-12 h-12 relative"
             >
-              <Heart 
-                size={24} 
-                color={activeTab === 'favourites' ? '#2F2F2F' : '#848282'} 
+              <Heart
+                size={24}
+                color={activeTab === 'favourites' ? '#2F2F2F' : '#848282'}
                 strokeWidth={activeTab === 'favourites' ? 2.5 : 2}
                 className={activeTab === 'favourites' ? "fill-current" : ""}
               />
@@ -285,13 +307,13 @@ const App: React.FC = () => {
               )}
             </button>
 
-            <button 
+            <button
               onClick={() => handleTabChange('profile')}
               className="flex flex-col items-center justify-center w-12 h-12 relative"
             >
-              <User 
-                size={24} 
-                color={activeTab === 'profile' ? '#2F2F2F' : '#848282'} 
+              <User
+                size={24}
+                color={activeTab === 'profile' ? '#2F2F2F' : '#848282'}
                 strokeWidth={activeTab === 'profile' ? 2.5 : 2}
               />
               {activeTab === 'profile' && (
@@ -302,6 +324,7 @@ const App: React.FC = () => {
         )}
 
       </div>
+      <Toast message={toastMessage} visible={toastVisible} onClose={hideToast} />
     </div>
   );
 };
