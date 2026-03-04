@@ -1,11 +1,31 @@
 export interface BarberShop {
   id: string;
   name: string;
+  salon_name?: string;
   address: string;
   city: string;
   rating: number;
   image: string;
+  cover_image?: string;
   isPopular: boolean;
+  bio?: string;
+  phone?: string;
+  total_reviews?: number;
+  barber_name?: string;
+  created_at?: string;
+}
+
+export interface BarberDetail extends BarberShop {
+  services: Service[];
+  products: Product[];
+  opening_hours: OpeningHour[];
+}
+
+export interface OpeningHour {
+  day_of_week: string;
+  open_time: string | null;
+  close_time: string | null;
+  is_closed: boolean;
 }
 
 export interface TabItem {
@@ -20,6 +40,7 @@ export interface Product {
   price: number;
   image: string;
   details?: string;
+  category?: string;
 }
 
 export interface Service {
@@ -29,6 +50,8 @@ export interface Service {
   price: number;
   image: string;
   details?: string;
+  duration_minutes?: number;
+  time_taken?: string;
 }
 
 export interface Booking {

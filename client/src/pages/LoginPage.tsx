@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Lock, LogIn, Loader2 } from 'lucide-react';
+import { useAuth, AuthUser } from '../context/AuthContext';
 
 interface LoginPageProps {
-    onLogin: (email: string) => void;
-    onSignUp?: () => void;
+    onLogin: (username: string, role: 'customer' | 'barber') => void;
+    onSignUp: () => void;
+    onShowToast: (msg: string) => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast }) => {
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -36,12 +39,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                 return;
             }
 
-            // Store the session token for future API calls
-            if (data.session?.access_token) {
-                localStorage.setItem('access_token', data.session.access_token);
+            if (data.session?.access_token && data.user) {
+                const userData: Omit<AuthUser, 'token'> = {
+                    id: data.user.id,
+                    username: data.user.username || email,
+                    role: data.user.role || 'customer',
+                    location: data.user.location,
+                };
+                login(data.session.access_token, userData);
+                onLogin(data.user.username || email, data.user.role || 'customer');
+            } else {
+                setError('Oväntad respons från server');
+                setLoading(false);
             }
-
-            onLogin(email);
         } catch (err) {
             setError('Kunde inte nå servern');
             setLoading(false);
@@ -131,7 +141,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                 {/* --- Social Login Buttons --- */}
                 <div className="flex flex-col gap-4 mb-8">
                     {/* Google */}
-                    <button className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group">
+                    <button
+                        onClick={() => onShowToast('Google login kommer snart 🔜')}
+                        className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group"
+                    >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 24 24" className="w-6 h-6">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -144,7 +157,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp }) => {
                     </button>
 
                     {/* Apple */}
-                    <button className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group">
+                    <button
+                        onClick={() => onShowToast('Apple login kommer snart 🔜')}
+                        className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group"
+                    >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 384 512" className="w-6 h-6 fill-black">
                                 <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 52.3-11.4 69.5-34.3z" />

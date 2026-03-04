@@ -3,13 +3,19 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-// Adress: POST http://localhost:3000/api/auth/register
+// POST /api/auth/register
 router.post('/register', authController.registerUser);
 
-// Adress: POST http://localhost:3000/api/auth/login
+// POST /api/auth/login
 router.post('/login', authController.loginUser);
 
-// GET http://localhost:3000/api/auth/profile — kräver inloggning
+// POST /api/auth/logout — kräver inloggning
+router.post('/logout', protect, authController.logoutUser);
+
+// GET /api/auth/profile — hämtar inloggad användares profil
 router.get('/profile', protect, authController.getProfile);
+
+// PUT /api/auth/profile — uppdaterar profil
+router.put('/profile', protect, authController.updateProfile);
 
 module.exports = router;

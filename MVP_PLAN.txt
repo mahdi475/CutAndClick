@@ -1,0 +1,940 @@
+Cut & Click — Fullständig MVP-Plan (10 Faser)
+Projektstatus vid start: Backend har authController (register/login/getProfile), bookingController (getAvailableSlots/createBooking/getUserBookings), postController (getAllHaircuts/getAllItems/createHaircut) och authMiddleware (protect). Frontend har React/Vite/TypeScript med Startup-, Login-, Home-, BarberDetail-, StoreServices-, ProductDetail-, Booking-, BookingConfirmed-, History-, Favourites- och ProfilePage. Supabase-schema har tabellerna users, haircut_posts, item_posts, bookings, opening_hours och reviews.
+
+Vad MVP:n ska uppnå
+En färdig, deployad webbapp där:
+
+Gäster kan bläddra bland barbershops, se tjänster, produkter och öppettider utan konto.
+Kunder kan registrera sig, logga in, boka tider, se bokningshistorik och spara favoriter.
+Barbers kan registrera sig med barber-rollen, lägga upp klipptjänster och produkter, sätta sina öppettider och hantera sina bokningar.
+Ingen betalning sker online — produkter visas bara som information om vad som finns i salongen.
+Fas 1 — Autentisering & Roller (Backend + Frontend)
+Mål
+Säkra upp hela auth-flödet: registrering med rollval (barber/customer), inloggning, utloggning, gäst-läge och skyddade routes. Det här är grunden som allt annat vilar på.
+
+1.1 Databasändring — users-tabellen
+Nuvarande schema har role TEXT DEFAULT 'customer'. Det räcker för MVP men vi behöver säkerställa att rollen verkligen sätts korrekt vid registrering och att barbers har en separat struktur för sin salongsinfo.
+
+Lägg till i Supabase (SQL):
+
+sql
+-- Säkerställ att roll-fältet bara kan vara giltiga värden
+ALTER TABLE users ADD CONSTRAINT users_role_check
+  CHECK (role IN ('customer', 'barber'));
+-- Barber-specifik profilinformation (en-till-en med users)
+CREATE TABLE IF NOT EXISTS barber_profiles (
+  user_id       UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  salon_name    TEXT NOT NULL,
+  salon_address TEXT NOT NULL,
+  city          TEXT NOT NULL,
+  phone         TEXT,
+  bio           TEXT,
+  cover_image   TEXT,
+  rating        FLOAT DEFAULT 0,
+  total_reviews INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+Varför separat barber_profiles? Kunder behöver inte salongsnamn, adress etc. Att hålla det separerat håller users tabellen ren och gör queries enklare.
+
+1.2 Backend — 
+authController.js
+Uppdatera 
+registerUser
+:
+
+- Ta emot: email, password, username, location, role ('customer' | 'barber')
+- Om role === 'barber': ta även emot salon_name, salon_address, city, phone
+- Skapa Supabase Auth-konto (supabase.auth.signUp)
+- Spara i users: { id, username, location, role }
+- Om role === 'barber': spara i barber_profiles: { user_id, salon_name, salon_address, city, phone }
+- Returnera: { message: 'Kontot är skapat!', role }
+Lägg till logoutUser:
+
+POST /api/auth/logout
+- Kräver inloggning (protect middleware)
+- Anropa supabase.auth.signOut()
+- Returnera: { message: 'Utloggad!' }
+Uppdatera 
+getProfile
+:
+
+- Hämta users: id, username, location, role, profile_pic_url
+- Om role === 'barber': JOIN med barber_profiles (salon_name, salon_address, city, phone, bio, cover_image, rating)
+- Returnera komplett profil-objekt beroende på roll
+1.3 Backend — Ny route: 
+authRoutes.js
+javascript
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.post('/logout', protect, logoutUser);
+router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);   // Ny — se Fas 6
+1.4 Frontend — LoginPage.tsx
+Nuvarande LoginPage är mest mockad. Nu ska den på riktigt anropa backend:
+
+- Vid klick på "login"-knappen:
+  1. POST till /api/auth/login med { email, password }
+  2. Om success: spara session-token i localStorage ('cut_click_token')
+  3. Spara user-objekt i en global AuthContext
+  4. Navigera till Home
+  5. Visa Toast: "Välkommen, [username]!"
+- Vid klick på "Sign Up":
+  1. Navigera till RegisterPage (ny sida)
+- Vid klick på "Login with Google":
+  1. MVP: Visa Toast "Google login kommer snart" (placeholder)
+- Vid klick på "Login with Apple":
+  1. MVP: Visa Toast "Apple login kommer snart" (placeholder)
+1.5 Frontend — Ny sida: RegisterPage.tsx
+Designas exakt som bilden — ren, minimalistisk, vit bakgrund:
+
+Steg 1: Välj roll
+  - Två kort: "Jag är Kund" / "Jag är Barber"
+  - Kund-kortet: ikon av person
+  - Barber-kortet: ikon av sax
+Steg 2 (Kund):
+  - Fält: Namn (username), E-post, Lösenord, Stad (location)
+  - Knapp: "Skapa konto"
+Steg 2 (Barber):
+  - Fält: Ditt namn, E-post, Lösenord, Salongens namn, Adress, Stad, Telefon
+  - Knapp: "Registrera din salong"
+Validering:
+  - Alla fält obligatoriska
+  - Lösenord minst 6 tecken
+  - E-post måste ha @
+  - Visa inline-felmeddelanden under varje fält
+Vid success:
+  - POST /api/auth/register
+  - Spara token + user i AuthContext + localStorage
+  - Navigera till Home (kund) eller BarberDashboard (barber)
+1.6 Frontend — AuthContext.tsx (Ny global state)
+typescript
+interface AuthUser {
+  id: string;
+  username: string;
+  role: 'customer' | 'barber' | 'guest';
+  token: string | null;
+  // barber-specifikt:
+  salon_name?: string;
+  salon_address?: string;
+  city?: string;
+}
+// Context tillhandahåller:
+const AuthContext = {
+  user: AuthUser | null,
+  isLoggedIn: boolean,
+  isGuest: boolean,
+  isBarber: boolean,
+  login: (data) => void,
+  logout: () => void,
+  setGuest: () => void,
+}
+1.7 Gäst-läge
+- På StartupPage: knapp "Fortsätt som gäst"
+- Sätter user.role = 'guest' i AuthContext (ingen token)
+- Gäster kan:
+  ✅ Se alla barbershops på hemskärmen
+  ✅ Se barbers tjänster och produkter
+  ✅ Se öppettider
+  ❌ Boka tid (redirect till Login med Toast: "Logga in för att boka")
+  ❌ Se historik (redirect till Login)
+  ❌ Se favoriter (redirect till Login)
+  ❌ Se profil (redirect till Login)
+1.8 Fas 1 — Klart när:
+ Registrering med roll fungerar och sparar i Supabase
+ Login returnerar token och user-objekt
+ Token sparas i localStorage
+ AuthContext finns och används i hela appen
+ Gäster kan se content utan att logga in
+ Gäster redirectas vid försök att boka
+ Logout fungerar och rensar localStorage
+Fas 2 — Databas-komplettering & Öppettider (Backend)
+Mål
+Fixa och komplettera databasschemat så att öppettider hanteras korrekt per dag, bookings-tabellen har rätt struktur, och allt är redo för de kommande faserna.
+
+2.1 Fixa bookings-tabellen
+Det befintliga schemat har booking_time TIMESTAMPTZ men 
+bookingController.js
+ använder booking_date DATE + booking_time TIME separat. Vi måste standardisera.
+
+sql
+-- Migrera till separat datum + tid
+ALTER TABLE bookings
+  ADD COLUMN IF NOT EXISTS booking_date DATE,
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'confirmed';
+-- Unik constraint för att förhindra dubbelbokningar
+ALTER TABLE bookings
+  ADD CONSTRAINT unique_booking
+  UNIQUE (haircut_id, booking_date, booking_time);
+2.2 Komplettera opening_hours-tabellen
+Nuvarande schema har separata kolumner per dag (monday, tuesday...) som TEXT. Vi byter till en flexiblare struktur med öppning/stängningstid per dag:
+
+sql
+-- Ny struktur för öppettider
+DROP TABLE IF EXISTS opening_hours;
+CREATE TABLE opening_hours (
+  id          SERIAL PRIMARY KEY,
+  user_id     UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  day_of_week TEXT NOT NULL,  -- 'monday', 'tuesday', etc.
+  open_time   TIME,           -- NULL = stängd den dagen
+  close_time  TIME,
+  is_closed   BOOLEAN DEFAULT FALSE,
+  UNIQUE(user_id, day_of_week)
+);
+Varför? Det är enklare att queray per dag, och det är tydligare om en dag är stängd (is_closed = true).
+
+2.3 Komplettera haircut_posts-tabellen
+sql
+ALTER TABLE haircut_posts
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 60,
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+2.4 Komplettera item_posts-tabellen (Produkter)
+sql
+ALTER TABLE item_posts
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'general',
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+-- Kategorier: 'hair', 'beard', 'skincare', 'tools', 'general'
+2.5 Backend — Öppettider-routes
+Ny fil: server/routes/openingHoursRoutes.js
+
+GET  /api/opening-hours/:userId      (publik – gäster kan se öppettider)
+PUT  /api/opening-hours              (kräver inloggning + barber-roll)
+Ny fil: server/controllers/openingHoursController.js
+
+javascript
+// getOpeningHours(req, res)
+// - Hämta alla öppettider för en barber (user_id från params)
+// - Returnera array med { day_of_week, open_time, close_time, is_closed }
+// updateOpeningHours(req, res)
+// - Body: array med dagar och tider
+// - Upsert (insert or update) i opening_hours
+// - Kräver barber-roll (middleware)
+2.6 Backend — requireBarber middleware
+javascript
+// server/middleware/requireBarber.js
+async function requireBarber(req, res, next) {
+  // protect körs innan detta, så req.user finns
+  const { data } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', req.user.id)
+    .single();
+  if (!data || data.role !== 'barber') {
+    return res.status(403).json({ error: 'Endast barbers har tillgång' });
+  }
+  next();
+}
+2.7 Fas 2 — Klart när:
+ Alla SQL-migrationer körda i Supabase
+ opening_hours med ny struktur fungerar
+ bookings unique constraint på plats
+ requireBarber middleware fungerar
+ GET + PUT /api/opening-hours fungerar och testats med Postman/Thunder Client
+Fas 3 — Hem-skärm & Barbershop-sökning (Frontend + Backend)
+Mål
+Hemskärmen ska ladda riktiga data från backend. Gäster och inloggade användare ska kunna söka, filtrera och bläddra bland barbershops.
+
+3.1 Backend — Ny route: Hämta alla barbers
+I 
+postRoutes.js
+ eller ny barberRoutes.js:
+
+GET /api/barbers              — Lista alla barbers med salongsinfo + rating
+GET /api/barbers/:id          — Detaljer för en specifik barber
+GET /api/barbers/search?q=    — Sök på salongsnamn eller stad
+GET /api/barbers/nearby?city= — Filtrera på stad
+I ny fil server/controllers/barberController.js:
+
+javascript
+// getAllBarbers(req, res)
+// JOIN: users + barber_profiles + opening_hours
+// Returnera: [{
+//   id, salon_name, salon_address, city, cover_image, rating,
+//   total_reviews, bio, opening_hours: [...]
+// }]
+// getBarberById(req, res)
+// Hämta allt ovan + haircut_posts (tjänster) + item_posts (produkter)
+// searchBarbers(req, res)
+// WHERE salon_name ILIKE or city ILIKE '%q%'
+3.2 Frontend — HomePage.tsx (Uppdatera från mock till riktig data)
+Nuläge: HomePage använder statisk mock-data (BarberShop-objekt hårdkodade)
+Mål: Hämta från /api/barbers
+Implementera:
+1. useEffect vid mount → fetch('/api/barbers')
+2. Visa loading skeleton medan data laddas (3 grå placeholder-kort)
+3. Visa felmeddelande om fetch misslyckas
+4. Rendera riktiga BarberShop-kort med:
+   - cover_image (eller placeholder-bild om saknas)
+   - salon_name, city, rating (stjärnor)
+   - Klickbart → navigerar till BarberDetailPage
+Filterfliken (Most Viewed / Nearby / Latest):
+- "Most Viewed": sortera på rating DESC
+- "Nearby": visa barbers i samma stad som inloggad användare
+- "Latest": sortera på created_at DESC
+Sökfält:
+- Debounce 300ms på input
+- GET /api/barbers/search?q=[input] vid knapptryckning
+- Visa resultat i en dropdown under sökfältet
+3.3 Frontend — BarberDetailPage.tsx (Uppdatera från mock)
+Flikar: All | Tjänster | Produkter | Favoriter | Info
+"All"-fliken:
+  - Slumpmässigt shuffle av tjänster + produkter
+"Tjänster"-fliken:
+  - Lista haircut_posts för denne barber
+  - Varje tjänst: bild, titel, pris, varaktighet, "Book Now"-knapp
+"Produkter"-fliken:
+  - Lista item_posts för denne barber
+  - Varje produkt: bild, titel, pris, kategori
+  - INGEN köp-knapp — bara "Se detaljer"
+"Info"-fliken:
+  - Salongsnamn, adress, stad
+  - Telefon (länk: tel:xxx)
+  - Öppettider (visa alla 7 dagar)
+  - Bio/beskrivning
+  - Karta (Iframe Google Maps med adressen)
+Action-knappar (rad med ikoner):
+  - Websida (öppna extern länk om de har en)
+  - Medela (öppna mailto: eller tel:)
+  - Ring (tel: länk)
+  - Adress (öppna Google Maps med adressen)
+  - Dela (Web Share API)
+3.4 Fas 3 — Klart när:
+ /api/barbers returnerar riktiga barbers från Supabase
+ /api/barbers/:id returnerar tjänster + produkter + öppettider
+ Søk fungerar
+ HomePage visar riktiga barbershops med bilder
+ BarberDetailPage visar alla 5 flikar med riktigt innehåll
+ Loading states och felhantering finns
+Fas 4 — Bokningssystem (Frontend + Backend)
+Mål
+Hela bokningsflödet från "Book Now" till bekräftelse ska fungera med riktig backend. Det här är kärnfunktionaliteten i appen.
+
+4.1 Backend — Uppdatera 
+bookingController.js
+getAvailableSlots
+ — Uppdatera:
+
+javascript
+// Nuläge: hämtar öppettider från opening_hours men strukturen ändrades i Fas 2
+// Nu: queray med day_of_week = dayName(date) från nya opening_hours-tabellen
+// Hantera is_closed = true (returnera [] om dagen är stängd)
+// Ta hänsyn till duration_minutes (ett 2h-klipp blockerar 2 slots)
+Ny funktion: cancelBooking:
+
+javascript
+// DELETE /api/bookings/:id — kräver inloggning
+// Kontrollera att booking tillhör req.user.id
+// Kontrollera att booking_date är i framtiden (ej avboka gamla bokningar)
+// Uppdatera status till 'cancelled' (ta INTE bort raden — bevara historik)
+Ny funktion: getBarberBookings:
+
+javascript
+// GET /api/bookings/barber — kräver inloggning + barber-roll
+// Hämta alla bokningar för inloggas barbers tjänster
+// JOIN med haircut_posts och users (kundens namn)
+// Sortera på booking_date, booking_time
+// Filtrera: ?date=YYYY-MM-DD för att se en specifik dag
+4.2 Backend — Uppdatera 
+bookingRoutes.js
+javascript
+router.get('/available/:haircutId', getAvailableSlots);   // Publik
+router.get('/my', protect, getUserBookings);               // Kund
+router.get('/barber', protect, requireBarber, getBarberBookings); // Barber
+router.post('/', protect, createBooking);                  // Kund
+router.patch('/:id/cancel', protect, cancelBooking);       // Kund
+4.3 Frontend — BookingPage.tsx (Uppdatera från mock till riktig)
+Flöde:
+1. Välj datum (kalender-komponent)
+   - Visa nuvarande månad
+   - Bakåt-knapp disabled för förflutna datum
+   - Stängda dagar (is_closed) visas grå och kan ej väljas
+2. Välj tid
+   - Fetch: GET /api/bookings/available/:haircutId?date=YYYY-MM-DD
+   - Visa ledig tider som svarta knappar
+   - Otillgängliga tider visas grå (disabled)
+   - Vald tid markeras (vit text på svart bakgrund)
+3. Bekräfta bokning
+   - Sammanfattning: tjänst, datum, tid, pris
+   - "Bekräfta bokning"-knapp
+   - POST /api/bookings med { haircut_id, booking_date, booking_time }
+   - Token i Authorization-header
+4. Success
+   - Navigera till BookingConfirmedPage
+   - Visa: "Din bokning är bekräftad!", datum, tid, salongsnamn
+Felhantering:
+   - 409: "Tyvärr tog någon annan den just nu — välj en annan tid"
+   - 401: Redirect till Login med Toast
+   - Generellt fel: "Något gick fel, försök igen"
+4.4 Frontend — HistoryPage.tsx (Uppdatera från mock)
+Fetch: GET /api/bookings/my
+Token i Authorization-header
+Visa två flikar:
+  "Kommande" — bokningar med booking_date >= idag och status = 'confirmed'
+  "Gammalt"  — bokningar med booking_date < idag eller status = 'cancelled'/'completed'
+Varje kommande bokning-kort:
+  - Salongsbild (thumbnail)
+  - Salongsnamn, adress
+  - Datum + tid (formatera: "Imorgon, 14:30" / "Måndag 3 mars, 10:00")
+  - View Details-knapp → navigera till BarberDetailPage
+  - Navigations-ikon → öppna Google Maps
+Varje historik-kort:
+  - Salongsnamn, adress
+  - Datum, pris
+  - Status-badge:
+    ✅ "UTFÖRD" (grön) — status = 'completed'
+    ❌ "AVBRYTEN" (röd) — status = 'cancelled'
+  - Tre-punkts-meny: "Boka igen" / "Lämna omdöme"
+4.5 Fas 4 — Klart när:
+ Kalendern visar och stänger dagar korrekt
+ Lediga tider hämtas från backend och visas
+ Bokning skapas i Supabase
+ Unique constraint förhindrar dubbelbokningar
+ Avbokning ändrar status till 'cancelled'
+ HistoryPage visar riktiga bokningar uppdelade i "Kommande" / "Gammalt"
+Fas 5 — Barber Dashboard (Frontend + Backend)
+Mål
+Barbers behöver ett eget dashboard där de kan hantera sina tjänster, produkter, öppettider och se sina bokningar. Barber-rollen ser ett ANNAT gränssnitt än kunder.
+
+5.1 Frontend — Rollbaserad routing i 
+App.tsx
+typescript
+// Efter inloggning, kontrollera user.role:
+if (user.role === 'barber') {
+  // Rendera BarberApp (Barber Dashboard)
+} else {
+  // Rendera CustomerApp (nuvarande app)
+}
+5.2 Frontend — BarberDashboardPage.tsx (Ny sida)
+Layout: Bottom nav med 4 flikar:
+  🏠 Hem     — Översikt av dagens bokningar + snabb-statistik
+  📋 Tjänster — Hantera klipptjänster
+  🛍️ Produkter — Hantera produkter  
+  📅 Schema   — Sätt öppettider
+  👤 Profil   — Barber-profil
+"Hem"-fliken:
+  - "God morgon, [namn]! 👋"
+  - Statistik-kort:
+    * Bokningar idag: X
+    * Kommande veckan: X
+    * Totala kunder: X
+    * Genomsnittligt betyg: ★ X.X
+  - Dagens bokningar (lista med tid + kundnamn)
+  - Snabbknapp: "Lägg till ny tjänst"
+5.3 Frontend — BarberServicesPage.tsx (Barbers tjänster)
+Lista alla egna haircut_posts
+Varje tjänst-kort:
+  - Bild, titel, beskrivning, pris, varaktighet
+  - Toggle: Aktiv/Inaktiv (PATCH /api/posts/haircuts/:id/toggle)
+  - Redigera-knapp → ReditBarberServiceModal
+  - Ta bort-knapp (med bekräftelsedialog)
+Flytande knapp (+) nere till höger → "Lägg till ny tjänst"
+"Lägg till ny tjänst"-modal:
+  Fält:
+    - Titel (t.ex. "Herrklippning")
+    - Beskrivning (textarea)
+    - Pris (number input)
+    - Varaktighet (dropdown: 30 min / 45 min / 60 min / 90 min / 120 min)
+    - Bild-URL (textfält + förhandsgranskning)
+  
+  POST /api/posts/haircuts → createHaircut
+5.4 Frontend — BarberProductsPage.tsx (Barbers produkter)
+Samma struktur som BarberServicesPage men för item_posts
+"Lägg till ny produkt"-modal:
+  Fält:
+    - Titel (t.ex. "Nordic Hold Hair Clay")
+    - Beskrivning
+    - Pris (visningspris — INGEN checkout)
+    - Kategori (dropdown: Hår / Skägg / Hudvård / Verktyg)
+    - Bild-URL + förhandsgranskning
+VIKTIGT: Ingen "Köp nu"-knapp. Produkterna är BARA en katalog.
+Tydlig text: "Produkten kan köpas i salongen."
+POST /api/posts/items → createItem
+5.5 Backend — Uppdatera 
+postController.js
+javascript
+// createItem(req, res) — ny funktion för item_posts
+// updateHaircut(req, res) — PUT /api/posts/haircuts/:id
+// deleteHaircut(req, res) — DELETE /api/posts/haircuts/:id
+// toggleHaircut(req, res) — PATCH /api/posts/haircuts/:id/toggle
+// updateItem(req, res) — PUT /api/posts/items/:id
+// deleteItem(req, res) — DELETE /api/posts/items/:id
+// Alla CRUD-funktioner kräver: protect + requireBarber
+// Kontrollera att haircut/item tillhör inloggad barber (user_id = req.user.id)
+5.6 Frontend — BarberSchedulePage.tsx (Öppettider)
+Visa veckans 7 dagar som rader:
+  Måndag    [toggle: Öppen/Stängd]   [Öppnar: 09:00] [Stänger: 18:00]
+  Tisdag    [toggle: Öppen/Stängd]   [Öppnar: 09:00] [Stänger: 18:00]
+  ...
+  Söndag    [toggle: STÄNGD]         (grayed out)
+Time input: native HTML time-input (<input type="time">)
+Spara-knapp: PUT /api/opening-hours
+Visa bekräftelse-toast: "Öppettiderna är sparade!"
+5.7 Frontend — BarberBookingsPage.tsx (Se bokningar)
+Kalendervy (vecka):
+  - Visa alla bokade tider som block i en veckokalender
+  - Klicka på ett block → visa kund-info (namn) + tjänst + tid
+Listvy (alternativ):
+  - Idag / Denna vecka / Denna månad (filterfliken)
+  - Varje bokning: kundnamn, tjänst, datum, tid, status
+Markera som utförd:
+  - PATCH /api/bookings/:id → status = 'completed'
+  - Knapp på varje bokning: "Markera utförd" (grön)
+5.8 Fas 5 — Klart när:
+ Barbers ser BarberDashboard vid inloggning
+ Barbers kan lägga till, redigera och ta bort tjänster
+ Barbers kan lägga till, redigera och ta bort produkter
+ Barbers kan sätta öppettider per dag
+ Barbers kan se sina bokningar och markera dem som utförda
+ Kunder kan INTE nå barber-routes
+Fas 6 — Profilsidor (Frontend + Backend)
+Mål
+Kompletta profilsidor för båda rollerna. Kunder ser sin historik och inställningar. Barbers kan redigera salongsinfo och se sin offentliga profil.
+
+6.1 Backend — Uppdatera 
+getProfile
+ och lägg till updateProfile
+javascript
+// PUT /api/auth/profile — updateProfile(req, res)
+// Kräver: protect middleware
+// Kund kan uppdatera: username, location, profile_pic_url
+// Barber kan dessutom uppdatera: salon_name, salon_address, city, phone, bio, cover_image
+// Validering:
+// - username: 3-30 tecken, inga specialtecken utom _ och -
+// - Bilder: URL-validering (börjar med http/https)
+6.2 Frontend — ProfilePage.tsx (Kund)
+Profil-sektion (som i bilden):
+  - Rund profilbild (klickbar → byt bild)
+  - Namn + e-post
+  - Statistik-kort:
+    * "Totala Bokningar": hämta count från /api/bookings/my
+    * "Konto Poäng": (MVP: 12 poäng per bokning — beräkna lokalt)
+Meny-lista:
+  → Personlig information
+    - Redigera username, location
+    - Spara → PUT /api/auth/profile
+  → Payment metoder
+    - MVP: Visa "Betalning sker i salongen" (statisk info)
+  → Notifications hantering
+    - Toggle-switchar per typ: Bokningspåminnelse / Ny tjänst / Kampanjer
+    - Sparas i localStorage (MVP — ingen backend för detta)
+  → User profil inställningar
+    - Ändra lösenord: supabase.auth.updateUser({ password })
+    - Radera konto: (confirm dialog) supabase.auth.admin.deleteUser() — MVP = informera om att kontakta support
+Sign Out-knapp:
+  - Anropa POST /api/auth/logout
+  - Rensa localStorage
+  - Navigera til StartupPage
+6.3 Frontend — BarberProfilePage.tsx (Barber)
+Offentlig profil-sektion:
+  - Cover-bild (stor, kan redigeras)
+  - Salongsnamn + stad + rating (★ X.X)
+  - Antal omdömen
+Redigera-läge (toggle):
+  - Salongsnamn, adress, stad, telefon
+  - Bio/beskrivning (textarea, max 300 tecken)
+  - Cover-bild URL + förhandsgranskning
+  - Spara → PUT /api/auth/profile
+Statistik:
+  - Totala bokningar gjorda via appen
+  - Stjärnbetyg (från reviews-tabellen)
+  - Aktiva tjänster: X
+Meny:
+  → Konto-inställningar (e-post, lösenord)
+  → Notifikationer
+  → Logout
+6.4 Fas 6 — Klart när:
+ Kund kan se sin profil med bokningsstatistik
+ Kund kan redigera username och location
+ Barber kan redigera salongsinfo och bio
+ Logout fungerar och rensar session
+ Profilsidor hämtar riktig data från backend
+Fas 7 — Favoriter & Omdömen (Frontend + Backend)
+Mål
+Användare ska kunna spara favorit-barbershops och lämna omdömen.
+
+7.1 Backend — Favorites
+Ny tabell:
+
+sql
+CREATE TABLE IF NOT EXISTS favourites (
+  id         SERIAL PRIMARY KEY,
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  barber_id  UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, barber_id)
+);
+Ny fil: server/routes/favouriteRoutes.js
+
+GET    /api/favourites           — Lista mina favoriter (protect)
+POST   /api/favourites           — Lägg till favorit { barber_id } (protect)
+DELETE /api/favourites/:barberId — Ta bort favorit (protect)
+Ny fil: server/controllers/favouriteController.js
+
+javascript
+// getFavourites: JOIN med barber_profiles för att få salongsinfo
+// addFavourite: INSERT med unik constraint (ignorera om redan finns)
+// removeFavourite: DELETE WHERE user_id = req.user.id AND barber_id = params.barberId
+7.2 Frontend — Hjärt-ikon på barbershop-kort
+- Hjärt-ikon i övre högra hörnet på varje barber-kort på hemskärmen
+- Hjärta-ikon på BarberDetailPage (uppe till höger)
+- Om inloggad som kund:
+  * Grått hjärta = inte i favoriter
+  * Rött ifyllt hjärta = i favoriter
+  * Klick: POST /api/favourites (eller DELETE om redan favorit)
+  * Optimistisk UI-uppdatering (ändra visuellt direkt, rollback vid fel)
+- Om gäst:
+  * Klick → Toast: "Logga in för att spara favoriter"
+7.3 Frontend — FavouritesPage.tsx (Uppdatera från mock)
+Fetch: GET /api/favourites
+Visa som grid (samma stil som hemskärmen)
+Tom-tillstånd: "Inga favoriter ännu. Utforska barbershops och spara dina favoriter! 💈"
+Klick på favorit-kort → navigera till BarberDetailPage
+7.4 Backend — Reviews/Omdömen
+Befintlig reviews-tabell är redan skapad. Nu implementerar vi logiken:
+
+Ny fil: server/routes/reviewRoutes.js
+
+GET  /api/reviews/:barberId   — Publik: hämta omdömen för en barber
+POST /api/reviews             — Kräver inloggning + kund-roll
+Ny fil: server/controllers/reviewController.js
+
+javascript
+// getReviews(req, res):
+// - Hämta alla reviews för target_user_id = params.barberId
+// - JOIN med users för att få reviewer's username
+// - Returnera: [{ stars, review_title, review_description, username, created_at }]
+// createReview(req, res):
+// - Validera: stars 1-5, review_description max 500 tecken
+// - Kontrollera att kunden faktiskt har bokat hos denne barber
+//   (SELECT från bookings WHERE customer_id = req.user.id AND haircut.user_id = body.barber_id)
+// - Kontrollera att kunden inte redan recenserat denna barber
+// - INSERT i reviews
+// - Uppdatera barber_profiles.rating och total_reviews:
+//   UPDATE barber_profiles SET
+//     total_reviews = total_reviews + 1,
+//     rating = (rating * total_reviews + stars) / (total_reviews + 1)
+//   WHERE user_id = body.barber_id
+7.5 Frontend — Omdömes-modal
+Triggas från: HistoryPage → tre-punkts-meny → "Lämna omdöme"
+Modal:
+  - Salongsnamn + bild (readonly)
+  - Stjärnor (1-5, klickbara)
+  - Titel (valfritt)
+  - Beskrivning (textarea, krav: minst 10 tecken)
+  - "Skicka omdöme"-knapp
+Vid success:
+  - Toast: "Tack för ditt omdöme! ⭐"
+  - Modal stängs
+  - Ny knapp visas: "Omdöme lämnat ✓" (disabled)
+7.6 Fas 7 — Klart när:
+ Hjärt-ikon fungerar och sparar/tar bort favoriter
+ FavouritesPage visar riktiga favoriter
+ Omdömen kan lämnas med stjärn-rating
+ Barbers rating uppdateras automatiskt
+ En kund kan bara recensera en barber de faktiskt bokat hos
+Fas 8 — Produkt-katalog & Store (Frontend + Backend)
+Mål
+Produktsektionen är INTE en e-handel. Det är en salongens "meny" — kunden ser vad som finns, priser och beskrivning, men köpet sker i salongen. Det ska göras 100% tydligt.
+
+8.1 Backend — Uppdatera 
+productController.js
+javascript
+// getItemsByBarber(req, res)
+// GET /api/posts/items/:barberId
+// Filtrera på is_active = true
+// Returnera sorterat efter category
+// createItem(req, res) — (kräver barber)
+// updateItem(req, res) — (kräver barber + ägare)
+// deleteItem(req, res) — (kräver barber + ägare)
+// toggleItem(req, res) — Aktiv/Inaktiv
+8.2 Frontend — ProductDetailPage.tsx (Uppdatera)
+Designen matchar bilden:
+  - Stor bild överst (hero)
+  - Titel + "Price" label + pris
+  - "Platinum Xh Plus" badge (paketsnamn / varaktighet)
+  - Flikar: Overview | Details
+"Overview"-fliken:
+  - Tid, avstånd till salongen, betyg
+  - Beskrivning
+"Details"-fliken:
+  - Ingredients/innehåll (för produkter)
+  - Användningsinstruktioner
+Knapp nederst:
+  - Om det är en TJÄNST: "Boka Nu 📅" → navigerar till BookingPage
+  - Om det är en PRODUKT: "Finns i salongen 🏪" (disabled, grå bakgrund)
+    Tooltip: "Denna produkt kan köpas direkt i salongen"
+VIKTIGT: Det ska ALDRIG finnas en köp-knapp för produkter.
+8.3 Frontend — Produktkategorier-filter
+I BarberDetailPage "Produkter"-fliken:
+  Filterbubblor: Alla | Hår | Skägg | Hudvård | Verktyg
+  Klick filtrerar produktlistan klient-sidan (ingen ny fetch)
+8.4 Fas 8 — Klart när:
+ Produkter visas med korrekt info (INGEN köp-knapp)
+ "Finns i salongen" meddelande är tydligt
+ Barbers kan hantera produkter via sitt dashboard
+ Kategorifilter fungerar i produktlistan
+Fas 9 — Notifikationer & Påminnelser (Frontend + Backend)
+Mål
+Enkla in-app notifikationer och e-post-påminnelser för bokningar.
+
+9.1 Backend — E-postnotifikationer (Supabase + Resend)
+Installera Resend (gratis tier: 100 mail/dag):
+
+bash
+cd server
+npm install resend
+Ny fil: server/utils/emailService.js
+
+javascript
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+async function sendBookingConfirmation({ to, customerName, salonName, date, time, service }) {
+  await resend.emails.send({
+    from: 'Cut & Click <noreply@cutandclick.se>',
+    to,
+    subject: `Bokningsbekräftelse — ${salonName}`,
+    html: `
+      <h2>Din bokning är bekräftad! ✅</h2>
+      <p>Hej ${customerName}!</p>
+      <p><strong>Salong:</strong> ${salonName}</p>
+      <p><strong>Tjänst:</strong> ${service}</p>
+      <p><strong>Datum:</strong> ${date}</p>
+      <p><strong>Tid:</strong> ${time}</p>
+      <hr>
+      <p>Du kan hantera din bokning i Cut & Click-appen.</p>
+    `
+  });
+}
+async function sendBookingReminder({ to, customerName, salonName, date, time }) {
+  // Skicka 24h innan bokning
+  // (Schemaläggs via cron-job eller Supabase scheduled functions)
+}
+module.exports = { sendBookingConfirmation, sendBookingReminder };
+**Anropa sendBookingConfirmation i 
+createBooking
+:
+
+javascript
+// Efter lyckad INSERT i bookings:
+// Hämta kundens email från supabase.auth.getUser
+// Hämta salongsnamn från barber_profiles
+// Anropa sendBookingConfirmation (async, no-await — fail silently)
+9.2 Backend — In-app Notifikationer (MVP: enkel tabell)
+sql
+CREATE TABLE IF NOT EXISTS notifications (
+  id         SERIAL PRIMARY KEY,
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  type       TEXT NOT NULL,  -- 'booking_confirmed', 'booking_reminder', 'review_received'
+  title      TEXT NOT NULL,
+  body       TEXT,
+  is_read    BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+Ny route:
+
+GET   /api/notifications        — Hämta mina notifikationer (protect)
+PATCH /api/notifications/:id    — Markera som läst (protect)
+PATCH /api/notifications/read-all — Markera alla som lästa (protect)
+9.3 Frontend — Notifikations-bell
+I HomePage-headern:
+  - Bell-ikon (🔔) uppe till höger
+  - Röd badge med antal olästa
+  - Klick → NotificationsPanel (slide-in från höger)
+NotificationsPanel:
+  - Lista med notifikationer (nyaste överst)
+  - Varje notis: ikon, titel, brödtext, tid sedan
+  - Klick på notis → markera som läst + navigera till relevant sida
+  - "Rensa alla"-knapp
+9.4 Fas 9 — Klart när:
+ E-post skickas vid ny bokning (Resend)
+ In-app notifikationer sparas vid bokningshändelser
+ Notifikations-bell visar antal olästa
+ Notifikations-panel kan öppnas och stängas
+Fas 10 — Polering, Testning & Deployment
+Mål
+Appen är funktionell. Nu handlar det om att göra den produktionsklar — säker, robust, responsiv och deployad på en riktig server.
+
+10.1 Säkerhet — Backend
+Rate limiting: npm install express-rate-limit
+  - /api/auth/*: max 10 requests/minute per IP (förhindrar brute-force)
+  - /api/bookings: max 30 requests/minute
+Input-validering: npm install express-validator
+  - registerUser: validera email format, password length, required fields
+  - createBooking: validera att booking_date är i framtiden
+  - createReview: validera stars 1-5, max content length
+CORS: Uppdatera app.js med specifik origin:
+  app.use(cors({ origin: process.env.CLIENT_URL }));
+Helmet: npm install helmet
+  app.use(helmet());  // Sätter säkra HTTP-headers
+10.2 Säkerhet — Supabase RLS (Row Level Security)
+sql
+-- Aktivera RLS på alla tabeller
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE haircut_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE item_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE favourites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+-- Exempel policies:
+-- Kunder kan bara se sina egna bokningar
+CREATE POLICY "Users see own bookings"
+  ON bookings FOR SELECT
+  USING (auth.uid() = customer_id);
+-- Barbers kan se bokningar för sina egna tjänster
+CREATE POLICY "Barbers see their bookings"
+  ON bookings FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM haircut_posts
+      WHERE id = bookings.haircut_id AND user_id = auth.uid()
+    )
+  );
+-- Alla kan läsa haircut_posts och item_posts
+CREATE POLICY "Public read haircut_posts"
+  ON haircut_posts FOR SELECT USING (true);
+10.3 Frontend — Performance
+Lazy loading av bilder:
+  - Lägg till loading="lazy" på alla <img>-taggar
+  - Eller använd react-intersection-observer för custom lazy load
+Skeleton loading:
+  - Skapa en SkeletonCard-komponent
+  - Visa 3-6 skeleton-cards medan data laddas
+Error boundaries:
+  - Wrap hela appen i en React Error Boundary
+  - Visa användarvänlig felskärm om komponenten crashar
+Caching:
+  - Cache fetchade barbers i sessionStorage (5 min TTL)
+  - Förhindrar onödiga re-fetches vid tab-byte
+10.4 Responsiv design — Final check
+Testa i följande breakpoints:
+  📱 375px (iPhone SE)         — Primär design
+  📱 390px (iPhone 14)         — Kontrollera
+  📱 430px (iPhone 14 Pro Max) — Kontrollera
+  📱 412px (Pixel 7)           — Kontrollera
+  💻 768px (iPad)              — Fungerar? Bottom nav → sidebar?
+  💻 1024px (Desktop)          — Sidebar visas, bra layout
+  💻 1440px (Stor skärm)       — Inga extrema stretch-effekter
+Kräver fix (om inte redan gjort):
+  - Textfält för touch: font-size minst 16px (forhindrar iOS-zoom)
+  - Tap-targets: minst 44x44px
+  - Scrollbara listor: overscroll-behavior: contain
+10.5 API Dokumentation — Uppdatera 
+API_DOKUMENTATION.md
+Lägg till alla nya endpoints:
+  - /api/barbers/**
+  - /api/opening-hours/**
+  - /api/favourites/**
+  - /api/reviews/**
+  - /api/notifications/**
+För varje endpoint, dokumentera:
+  - Method + path
+  - Auth krävs? (Bearer token / Public)
+  - Request body/params/query (med TypeScript-liknande types)
+  - Success response example
+  - Error responses
+
+
+1. Gå till Authentication → URL Configuration
+2. Lägg till Vercel-URL i "Site URL" och "Redirect URLs"
+3. Aktivera Email Confirmations (frivilligt för MVP)
+4. Kontrollera att .env-filer INTE är pushade till GitHub
+10.7 Manuell testplan (MVP-acceptanstest)
+Test 1 — Gäst-flöde:
+
+1. Öppna appen utan konto
+2. Klicka "Fortsätt som gäst"
+3. ✅ Se hemskärm med barbershops
+4. ✅ Klicka på en barbershop → se tjänster, produkter, info, öppettider
+5. ✅ Klicka "Book Now" → redirect till login med Toast-meddelande
+6. ✅ Klicka hjärta → meddelande om att logga in
+Test 2 — Kund-registrering och inloggning:
+
+1. Klicka "Registrera dig"
+2. Välj "Kund"
+3. Fyll i: namn, e-post, lösenord, stad
+4. Klicka "Skapa konto"
+5. ✅ Inloggad, navigeras till hemskärm
+6. ✅ Toast: "Välkommen, [namn]!"
+7. Logga ut, logga in igen med e-post + lösenord
+8. ✅ Inloggad korrekt
+Test 3 — Barber-registrering:
+
+1. Klicka "Registrera dig"
+2. Välj "Barber"
+3. Fyll i: namn, e-post, lösenord, salongsnamn, adress, stad, telefon
+4. ✅ Inloggad, navigeras till Barber Dashboard
+5. ✅ Barber kan skapa en tjänst (titel, beskrivning, pris, tid, bild-URL)
+6. ✅ Barber kan sätta öppettider (t.ex. Mån-Fre 09:00-18:00, Lör 10:00-16:00, Sön stängd)
+Test 4 — Hela bokningsflödet:
+
+1. Logga in som kund
+2. Hitta barber-salongen från Test 3 på hemskärmen
+3. Klicka på salongen → se tjänsten från Test 3
+4. Klicka "Book Now"
+5. ✅ Kalender visas. Söndag är grå (stängd)
+6. Välj en dag (t.ex. måndag)
+7. ✅ Lediga tider visas (09:00–17:00)
+8. Välj en tid (t.ex. 10:00)
+9. Klicka "Bekräfta bokning"
+10. ✅ BookingConfirmedPage visas
+11. ✅ E-post skickad (kontrollera inkorgen)
+12. Gå till History → Kommande
+13. ✅ Bokningen visas med rätt datum och tid
+Test 5 — Dubbelboknings-skydd:
+
+1. Logga in som en annan kund
+2. Försök boka SAMMA tid som i Test 4
+3. ✅ Felmeddelande: "Tiden är redan bokad"
+Test 6 — Produkter (INGEN köp-knapp):
+
+1. Logga in som barber
+2. Skapa en produkt: "Nordic Hold Clay", 230kr, kategori "Hår"
+3. Logga in som kund
+4. Navigera till barbers sida → Produkter-fliken
+5. Klicka på produkten
+6. ✅ Produktsida visar bild, namn, pris, beskrivning
+7. ✅ INGEN "Köp"-knapp
+8. ✅ Knapp textar "Finns i salongen 🏪"
+Test 7 — Favoriter:
+
+1. Logga in som kund
+2. Klicka hjärt-ikonen på en barbershop
+3. ✅ Hjärtat blir rött
+4. Gå till Favorit-fliken
+5. ✅ Barbershopen visas
+6. Klicka hjärtat igen
+7. ✅ Barbershopen tas bort från favoriter
+Test 8 — Omdöme:
+
+1. Logga in som kund (som har en genomförd bokning)
+2. Gå till History → Gammalt
+3. Klicka tre-punkts-meny → "Lämna omdöme"
+4. ✅ Modal öppnas
+5. Välj 5 stjärnor, skriv "Fantastisk klippning!"
+6. Klicka "Skicka omdöme"
+7. ✅ Toast bekräftar
+8. Gå till barbers sida
+9. ✅ Betyg har uppdaterats
+10.8 Fas 10 — Klart när (Projektet är DONE):
+ Rate limiting och helmet är aktivt
+ RLS-policies är på plats i Supabase
+ Alla 8 manuella tester ovan är godkända
+ Frontend är deployad på Vercel
+ Backend är deployad på Render
+ API_DOKUMENTATION.md är uppdaterad
+ .env-filer är INTE pushade till GitHub
+ README.md har deploy-instruktioner
+Sammanfattning — Vad varje fas levererar
+Fas	Namn	Leverans
+1	Auth & Roller	Register med rollval, login, gäst-läge, AuthContext, skyddade routes
+2	Databas	Komplett schema, öppettider-struktur, unique constraints, requireBarber
+3	Hem & Sökning	Riktiga barbershops från API, sökning, filtrar, detaljsida
+4	Bokning	Kalender, lediga tider, skapa bokning, avboka, historik
+5	Barber Dashboard	Hantera tjänster, produkter, öppettider, se bokningar
+6	Profiler	Kundprofil, barber-profil, redigera info, logout
+7	Favoriter & Omdömen	Spara favoriter, stjärnbetyg, reviews
+8	Produktkatalog	Visning-only store, inga köp-knappar, kategorier
+9	Notifikationer	E-post vid bokning, in-app notiser, notification bell
+10	Deploy & Polering	Säkerhet, RLS, responsiv test, Vercel + Render deploy

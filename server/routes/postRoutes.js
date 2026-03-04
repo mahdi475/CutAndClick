@@ -1,15 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const postController = require('../controllers/postController');
-const { protect } = require('../middleware/authMiddleware');
+const c = require('../controllers/postController');
+const { protect, requireBarber } = require('../middleware/authMiddleware');
 
-// GET http://localhost:3000/api/posts/haircuts — publik
-router.get('/haircuts', postController.getAllHaircuts);
+const barber = [protect, requireBarber];
 
-// GET http://localhost:3000/api/posts/items — publik
-router.get('/items', postController.getAllItems);
+// ─── Publik ────────────────────────────────────────────────
+router.get('/haircuts', c.getAllHaircuts);
+router.get('/items', c.getAllItems);
 
-// POST http://localhost:3000/api/posts/haircuts — kräver inloggning
-router.post('/haircuts', protect, postController.createHaircut);
+// ─── Barbers egna (inkl inaktiva) ─────────────────────────
+router.get('/my/haircuts', ...barber, c.getMyHaircuts);
+router.get('/my/items', ...barber, c.getMyItems);
+
+// ─── CRUD haircuts ─────────────────────────────────────────
+router.post('/haircuts', ...barber, c.createHaircut);
+router.put('/haircuts/:id', ...barber, c.updateHaircut);
+router.delete('/haircuts/:id', ...barber, c.deleteHaircut);
+router.patch('/haircuts/:id/toggle', ...barber, c.toggleHaircut);
+
+// ─── CRUD items ────────────────────────────────────────────
+router.post('/items', ...barber, c.createItem);
+router.put('/items/:id', ...barber, c.updateItem);
+router.delete('/items/:id', ...barber, c.deleteItem);
+router.patch('/items/:id/toggle', ...barber, c.toggleItem);
+
+// ─── Markera bokning utförd ────────────────────────────────
+router.patch('/bookings/:id/complete', ...barber, c.completeBooking);
 
 module.exports = router;

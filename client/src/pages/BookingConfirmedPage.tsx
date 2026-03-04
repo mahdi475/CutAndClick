@@ -1,94 +1,111 @@
 import React from 'react';
-import { Check, Calendar, Clock, MapPin } from 'lucide-react';
+import { Check, Calendar, Clock, Scissors } from 'lucide-react';
+import { Product, Service, BarberShop } from '../types';
 
 interface BookingConfirmedPageProps {
   onHome: () => void;
+  details?: { date: string; time: string } | null;
+  item?: Product | Service | null;
+  barber?: BarberShop | null;
 }
 
-const BookingConfirmedPage: React.FC<BookingConfirmedPageProps> = ({ onHome }) => {
-  return (
-    <div className="flex flex-col h-full bg-white relative px-7 pt-20 pb-10">
+const MONTHS_SV = [
+  'januari', 'februari', 'mars', 'april', 'maj', 'juni',
+  'juli', 'augusti', 'september', 'oktober', 'november', 'december'
+];
 
-      {/* --- Success Animation/Icon --- */}
-      <div className="flex flex-col items-center justify-center mb-12">
-        <div className="w-[100px] h-[100px] bg-[#00B84A]/10 rounded-full flex items-center justify-center mb-6 animate-bounce-slow">
-          <div className="w-[60px] h-[60px] bg-[#00B84A] rounded-full flex items-center justify-center shadow-lg shadow-[#00B84A]/30">
-            <Check size={32} className="text-white" strokeWidth={4} />
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${d.getDate()} ${MONTHS_SV[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+const BookingConfirmedPage: React.FC<BookingConfirmedPageProps> = ({
+  onHome, details, item, barber
+}) => {
+  return (
+    <div className="flex flex-col min-h-full bg-white relative px-7 pt-16 pb-10">
+
+      {/* Success icon */}
+      <div className="flex flex-col items-center justify-center mb-10">
+        <div className="w-[100px] h-[100px] bg-[#00B84A]/10 rounded-full flex items-center justify-center mb-6">
+          <div className="w-[60px] h-[60px] bg-[#00B84A] rounded-full flex items-center justify-center shadow-lg shadow-[#00B84A]/30 animate-bounce">
+            <Check size={30} className="text-white" strokeWidth={3.5} />
           </div>
         </div>
-        <h1 className="text-[#333333] font-inter font-bold text-[30px] text-center leading-tight">
-          Bokning <br /> Bekräftad!
+        <h1 className="text-[#333333] font-inter font-bold text-[28px] text-center leading-tight">
+          Bokning<br />Bekräftad!
         </h1>
-        <p className="text-[#888888] font-inter font-medium text-[16px] mt-3 text-center max-w-[250px]">
+        <p className="text-[#888888] font-inter font-medium text-[15px] mt-3 text-center max-w-[260px]">
           Din tid är reserverad. Vi har skickat en bekräftelse till din email.
         </p>
       </div>
 
-      {/* --- Booking Receipt Card --- */}
-      <div className="w-full bg-[#FBFBFB] rounded-[30px] p-6 shadow-[0px_9px_28px_rgba(0,0,0,0.05)] mb-auto relative overflow-hidden border border-[#F0F0F0]">
+      {/* Receipt card */}
+      <div className="w-full bg-[#FAFAFA] rounded-[28px] p-6 shadow-[0px_6px_24px_rgba(0,0,0,0.06)] mb-8 border border-[#F0F0F0] relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[50px] h-[3px] bg-[#E5E5E5] rounded-b-full" />
 
-        {/* Decorative Top Line */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60px] h-[4px] bg-[#E5E5E5] rounded-b-full"></div>
+        <div className="flex flex-col gap-5 mt-2">
 
-        <div className="flex flex-col gap-6 mt-2">
-
-          {/* Barber Info */}
-          <div className="flex items-start gap-4 border-b border-[#EAEAEA] pb-5">
-            <img
-              src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=200"
-              alt="Barber"
-              className="w-[50px] h-[50px] rounded-[15px] object-cover"
-            />
-            <div>
-              <h3 className="text-[#333333] font-roboto font-bold text-[18px]">Ferrari Cutzz</h3>
-              <p className="text-[#888888] font-roboto text-[14px]">Avenyn, Göteborg</p>
+          {/* Barber info */}
+          {barber && (
+            <div className="flex items-center gap-4 border-b border-[#F0F0F0] pb-5">
+              <div className="w-[50px] h-[50px] rounded-[14px] overflow-hidden bg-gray-200 flex-shrink-0">
+                <img src={barber.image} alt={barber.name} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h3 className="text-[#333] font-roboto font-bold text-[17px]">{barber.name}</h3>
+                <p className="text-[#888] font-roboto text-[13px]">{barber.address}, {barber.city}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Details */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white border border-[#F0F0F0] flex items-center justify-center text-[#333333]">
-                <Calendar size={14} />
+            {details?.date && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white border border-[#EAEAEA] flex items-center justify-center">
+                  <Calendar size={14} className="text-[#333]" />
+                </div>
+                <div>
+                  <span className="block text-[11px] text-[#AAAAAA] font-inter uppercase tracking-wide">Datum</span>
+                  <span className="block text-[15px] text-[#333] font-inter font-semibold">{formatDate(details.date)}</span>
+                </div>
               </div>
-              <div>
-                <span className="block text-[12px] text-[#AAAAAA] font-inter uppercase tracking-wide">Datum</span>
-                <span className="block text-[15px] text-[#333333] font-inter font-medium">2 November 2022</span>
-              </div>
-            </div>
+            )}
 
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white border border-[#F0F0F0] flex items-center justify-center text-[#333333]">
-                <Clock size={14} />
+            {details?.time && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white border border-[#EAEAEA] flex items-center justify-center">
+                  <Clock size={14} className="text-[#333]" />
+                </div>
+                <div>
+                  <span className="block text-[11px] text-[#AAAAAA] font-inter uppercase tracking-wide">Tid</span>
+                  <span className="block text-[15px] text-[#333] font-inter font-semibold">{details.time}</span>
+                </div>
               </div>
-              <div>
-                <span className="block text-[12px] text-[#AAAAAA] font-inter uppercase tracking-wide">Tid</span>
-                <span className="block text-[15px] text-[#333333] font-inter font-medium">10:30 - 12:30</span>
-              </div>
-            </div>
+            )}
 
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white border border-[#F0F0F0] flex items-center justify-center text-[#333333]">
-                <MapPin size={14} />
+            {item && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white border border-[#EAEAEA] flex items-center justify-center">
+                  <Scissors size={14} className="text-[#333]" />
+                </div>
+                <div>
+                  <span className="block text-[11px] text-[#AAAAAA] font-inter uppercase tracking-wide">Tjänst</span>
+                  <span className="block text-[15px] text-[#333] font-inter font-semibold">{item.title} — {item.price} kr</span>
+                </div>
               </div>
-              <div>
-                <span className="block text-[12px] text-[#AAAAAA] font-inter uppercase tracking-wide">Service</span>
-                <span className="block text-[15px] text-[#333333] font-inter font-medium">Herrklippning</span>
-              </div>
-            </div>
+            )}
           </div>
-
         </div>
       </div>
 
-      {/* --- Action Button --- */}
       <button
         onClick={onHome}
-        className="w-full h-[65px] bg-black rounded-[20px] flex items-center justify-center shadow-[0px_10px_20px_rgba(0,0,0,0.15)] active:scale-95 transition-transform"
+        className="w-full h-[62px] bg-black rounded-[18px] flex items-center justify-center shadow-xl active:scale-95 transition-transform hover:bg-gray-800"
       >
-        <span className="text-white font-inter font-bold text-[18px]">Tillbaka till Hem</span>
+        <span className="text-white font-inter font-bold text-[17px]">Tillbaka till Hem</span>
       </button>
-
     </div>
   );
 };

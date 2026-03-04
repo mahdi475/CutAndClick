@@ -1,157 +1,120 @@
-import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import ProductCard from '../components/ProductCard';
-import { Product, Service } from '../types';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Heart, MapPin, Star, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-interface FavouritesPageProps {
-  onItemClick?: (item: Product | Service) => void;
-  onBack: () => void;
+interface Favourite {
+  barber_id: string;
+  salon_name: string;
+  city: string;
+  salon_address: string;
+  image: string;
+  rating: number | null;
 }
 
-const FAV_BARBERS = [
-  {
-    id: '1',
-    name: 'ProClips',
-    address: 'Avenyn',
-    city: 'Göteborg',
-    image: 'https://placehold.co/200'
-  },
-  {
-    id: '2',
-    name: 'Ferrari Cutzz',
-    address: 'Avenyn',
-    city: 'Göteborg',
-    image: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=200'
-  },
-  {
-    id: '3',
-    name: 'Ferrari Cutzz',
-    address: 'Avenyn',
-    city: 'Göteborg',
-    image: 'https://placehold.co/200'
-  },
-  {
-    id: '4',
-    name: 'Fade Masters',
-    address: 'Central',
-    city: 'Stockholm',
-    image: 'https://placehold.co/200'
-  }
-];
+interface FavouritesPageProps {
+  onBack: () => void;
+  onBarberClick?: (barberId: string) => void;
+}
 
-const SAVED_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    title: 'Skägg Olja',
-    subtitle: 'För skägget',
-    price: 230,
-    image: 'https://placehold.co/400'
-  },
-  {
-    id: '2',
-    title: 'Herrklippning',
-    subtitle: 'Skin fade / taper fade',
-    price: 230,
-    image: 'https://placehold.co/400'
-  },
-  {
-    id: '3',
-    title: 'Hår Clay',
-    subtitle: 'För Håret',
-    price: 230,
-    image: 'https://placehold.co/400'
-  }
-];
+const FavouritesPage: React.FC<FavouritesPageProps> = ({ onBack, onBarberClick }) => {
+  const { user } = useAuth();
+  const [favs, setFavs] = useState<Favourite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const token = user?.token;
 
-const TABS = [
-  { id: 'most_viewed', label: 'Most Viewed' },
-  { id: 'nearby', label: 'Nearby' },
-  { id: 'latest', label: 'Latest' }
-];
+  const load = () => {
+    if (!token) { setLoading(false); return; }
+    fetch('/api/favourites', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { setFavs(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
 
-const FavouritesPage: React.FC<FavouritesPageProps> = ({ onItemClick, onBack }) => {
-  const [activeFilter, setActiveFilter] = useState('most_viewed');
+  useEffect(() => { load(); }, [token]);
+
+  const handleRemove = async (barberId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRemoving(barberId);
+    setFavs(prev => prev.filter(f => f.barber_id !== barberId)); // optimistic
+    await fetch(`/api/favourites/${barberId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setRemoving(null);
+  };
 
   return (
-    <div className="flex flex-col min-h-full bg-white relative pb-24 px-7 pt-10 md:px-10">
-
-      {/* --- Header --- */}
-      <div className="flex items-center gap-6 mb-8">
-        <button
-          onClick={onBack}
-          className="w-[45px] h-[45px] bg-white rounded-[16px] border border-gray-100 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
-        >
-          <ArrowLeft className="text-[#222222]" size={20} strokeWidth={2.5} />
+    <div className="flex flex-col min-h-full bg-white pb-24 px-6 pt-10">
+      {/* Header */}
+      <div className="flex items-center gap-5 mb-8">
+        <button onClick={onBack} className="w-[44px] h-[44px] bg-white rounded-[14px] border border-gray-100 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
+          <ArrowLeft className="text-[#222]" size={20} strokeWidth={2.5} />
         </button>
-        <h1 className="text-[#333333] font-inter font-bold text-[25px]">Mina Favoriter</h1>
+        <h1 className="text-[#333] font-inter font-bold text-[24px]">Mina Favoriter</h1>
       </div>
 
-      {/* --- Filter Tabs --- */}
-      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 mb-8 md:overflow-visible">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveFilter(tab.id)}
-            className={`
-              flex-shrink-0 px-6 h-[54px] rounded-[20px] flex items-center justify-center font-roboto font-medium text-[15px] transition-all duration-300
-              ${activeFilter === tab.id
-                ? 'bg-[#2F2F2F] text-white shadow-[0px_9px_19px_rgba(0,0,0,0.15)]'
-                : 'bg-[#FBFBFB] text-[#C5C5C5] hover:bg-gray-100'}
-            `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* --- Section: Frisörer (Barbers) --- */}
-      <div>
-        <h2 className="text-[#888888] font-inter font-bold text-[17px] mb-4 pl-3">Frisörer</h2>
-        <div className="flex flex-col gap-4 mb-8 md:grid md:grid-cols-2 lg:grid-cols-3">
-          {FAV_BARBERS.map((barber, index) => (
-            <div key={`${barber.id}-${index}`} className="w-full h-[86px] bg-[#FBFBFB] rounded-[30px] shadow-[0px_9px_28px_rgba(0,0,0,0.05)] flex items-center px-4 relative hover:shadow-lg transition-shadow cursor-pointer">
+      {/* Content */}
+      {loading ? (
+        <div className="flex justify-center pt-16">
+          <Loader2 size={28} className="animate-spin text-black/30" />
+        </div>
+      ) : !token ? (
+        <div className="flex flex-col items-center pt-20 gap-4">
+          <Heart size={48} className="text-gray-200" />
+          <p className="font-inter text-gray-400 text-center">Logga in för att spara favoriter</p>
+        </div>
+      ) : favs.length === 0 ? (
+        <div className="flex flex-col items-center pt-16 gap-4 text-center px-8">
+          <Heart size={52} className="text-gray-200" />
+          <p className="font-inter font-semibold text-[18px] text-black">Inga favoriter ännu</p>
+          <p className="font-inter text-[14px] text-gray-400">Utforska barbershops och spara dina favoriter! 💈</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <p className="font-inter text-[14px] text-gray-400 pl-1">{favs.length} sparade barbershops</p>
+          {favs.map(fav => (
+            <button
+              key={fav.barber_id}
+              onClick={() => onBarberClick?.(fav.barber_id)}
+              className="w-full bg-[#FAFAFA] rounded-[24px] shadow-sm flex items-center px-4 py-3 gap-4 relative border border-gray-100 hover:shadow-md transition-shadow active:scale-[0.99]"
+            >
               {/* Avatar */}
-              <img
-                src={barber.image}
-                alt={barber.name}
-                className="w-[55px] h-[55px] rounded-[15px] object-cover bg-gray-200 flex-shrink-0"
-              />
+              <div className="w-[60px] h-[60px] rounded-[16px] overflow-hidden bg-gray-200 flex-shrink-0">
+                {fav.image
+                  ? <img src={fav.image} alt={fav.salon_name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-200 flex items-center justify-center text-white font-bold text-xl">✂</div>
+                }
+              </div>
 
               {/* Info */}
-              <div className="ml-4 flex-1 min-w-0">
-                <div className="flex flex-col leading-tight">
-                  <span className="text-black font-roboto font-medium text-[20px] truncate">
-                    {barber.name},
-                  </span>
-                  <span className="text-[#CAC8C8] font-roboto font-medium text-[16px] truncate">
-                    {barber.city}, {barber.address}
-                  </span>
-                </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="font-roboto font-semibold text-[17px] text-black truncate">{fav.salon_name}</p>
+                <p className="font-roboto text-[14px] text-gray-400 truncate">
+                  {fav.city}{fav.salon_address ? `, ${fav.salon_address}` : ''}
+                </p>
+                {fav.rating && fav.rating > 0 ? (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                    <span className="font-inter text-[12px] text-gray-500">{fav.rating.toFixed(1)}</span>
+                  </div>
+                ) : null}
               </div>
 
-              {/* Menu Dots */}
-              <div className="absolute right-5 flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-[#D9D9D9]"></div>
-                <div className="w-2 h-2 rounded-full bg-[#D9D9D9]"></div>
-                <div className="w-2 h-2 rounded-full bg-[#D9D9D9]"></div>
-              </div>
-            </div>
+              {/* Remove heart */}
+              <button
+                onClick={e => handleRemove(fav.barber_id, e)}
+                className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 hover:bg-red-100 transition-colors"
+              >
+                {removing === fav.barber_id
+                  ? <Loader2 size={14} className="animate-spin text-red-400" />
+                  : <Heart size={16} className="text-red-400 fill-red-400" />
+                }
+              </button>
+            </button>
           ))}
         </div>
-      </div>
-
-      {/* --- Section: Sparade Produkter (Saved Products) --- */}
-      <div>
-        <h2 className="text-[#888888] font-inter font-bold text-[17px] mb-4 pl-3">Sparade Produkter</h2>
-        <div className="flex overflow-x-auto pb-4 no-scrollbar -mx-7 px-7 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 md:overflow-visible">
-          {SAVED_PRODUCTS.map(product => (
-            <div key={product.id} className="mr-4 md:mr-0 md:w-full">
-              <ProductCard product={product} className="md:w-full" onClick={onItemClick} />
-            </div>
-          ))}
-        </div>
-      </div>
-
+      )}
     </div>
   );
 };
