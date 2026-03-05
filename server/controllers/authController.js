@@ -1,3 +1,4 @@
+const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/db');
 
 // ─────────────────────────────────────────────
@@ -16,7 +17,13 @@ async function registerUser(req, res) {
 
         // 1. Skapa Supabase Auth-konto
         let authData, authError;
-        const signupRes = await tempSupabase.auth.signUp({ email, password });
+        const signupRes = await tempSupabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { role: validRole } // Spara rollen i metadata för snabbare åtkomst i JWT
+            }
+        });
         authData = signupRes.data;
         authError = signupRes.error;
 
@@ -39,7 +46,10 @@ async function registerUser(req, res) {
             // after registering if this fallback is used, but that's better than being completely blocked.
         }
 
-        if (authError) return res.status(400).json({ error: authError.message });
+        if (authError) {
+            console.error("SUPABASE AUTH SIGNUP ERROR:", authError.message);
+            return res.status(400).json({ error: authError.message });
+        }
 
         console.log("DEBUG REGISTRATION AUTHDATA:", authData);
         const userId = authData.user.id;
@@ -53,7 +63,10 @@ async function registerUser(req, res) {
             role: validRole,
         }]);
 
-        if (dbError) return res.status(400).json({ error: dbError.message });
+        if (dbError) {
+            console.error("USERS TABLE INSERT ERROR:", dbError.message);
+            return res.status(400).json({ error: dbError.message });
+        }
 
         // 3. Om barber: spara i barber_profiles
         if (validRole === 'barber') {
@@ -69,7 +82,10 @@ async function registerUser(req, res) {
                 city,
                 phone: phone || null,
             }]);
-            if (barberError) return res.status(400).json({ error: barberError.message });
+            if (barberError) {
+                console.error("BARBER PROFILES INSERT ERROR:", barberError.message);
+                return res.status(400).json({ error: barberError.message });
+            }
         }
 
         res.status(201).json({
@@ -86,7 +102,6 @@ async function registerUser(req, res) {
 // ─────────────────────────────────────────────
 // INLOGGNING
 // ─────────────────────────────────────────────
-const { createClient } = require('@supabase/supabase-js');
 
 async function loginUser(req, res) {
     const { email, password } = req.body;
@@ -102,7 +117,7 @@ async function loginUser(req, res) {
 
         const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('id, username, location, role')
+            .select('id, username, location, role, profile_pic_url')
             .eq('id', data.user.id)
             .single();
 
@@ -117,6 +132,7 @@ async function loginUser(req, res) {
             username: userData.username || email,
             location: userData.location || '',
             role: userData.role,
+            profile_pic_url: userData.profile_pic_url || '',
         };
 
         res.status(200).json({
@@ -153,7 +169,7 @@ async function getProfile(req, res) {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, username, location, role')
+            .select('id, username, location, role, profile_pic_url')
             .eq('id', user_id)
             .single();
 
@@ -165,6 +181,7 @@ async function getProfile(req, res) {
             username: user.username,
             location: user.location,
             role: user.role,
+            profile_pic_url: user.profile_pic_url,
         };
 
         if (user.role === 'barber') {
@@ -189,33 +206,37 @@ async function getProfile(req, res) {
 // ─────────────────────────────────────────────
 async function updateProfile(req, res) {
     const user_id = req.user.id;
-    const { username, location, bio, salon_name, salon_address, city, phone, cover_image } = req.body; // Added cover_image to destructuring
+    const { username, location, bio, salon_name, salon_address, city, phone, cover_image, profile_pic_url } = req.body;
 
     try {
-        // First, get the user's current role to determine if they are a barber
-        const { data: userData, error: userFetchError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user_id)
-            .single();
+        // Build update object for 'users' table
+        const userUpdate = {};
+        if (username !== undefined) userUpdate.username = username;
+        if (location !== undefined) userUpdate.location = location;
+        if (profile_pic_url !== undefined) userUpdate.profile_pic_url = profile_pic_url;
 
-        if (userFetchError || !userData) {
-            return res.status(404).json({ error: 'Användare hittades inte.' });
+        if (Object.keys(userUpdate).length > 0) {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update(userUpdate)
+                .eq('id', user_id);
+
+            if (updateError) return res.status(400).json({ error: updateError.message });
         }
 
-        const validRole = userData.role; // Use the fetched role
+        // Check if we need to update 'barber_profiles'
+        const barberUpdate = {};
+        if (salon_name !== undefined) barberUpdate.salon_name = salon_name;
+        if (salon_address !== undefined) barberUpdate.salon_address = salon_address;
+        if (city !== undefined) barberUpdate.city = city;
+        if (phone !== undefined) barberUpdate.phone = phone;
+        if (bio !== undefined) barberUpdate.bio = bio;
+        if (cover_image !== undefined) barberUpdate.cover_image = cover_image;
 
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ username, location })
-            .eq('id', user_id);
-
-        if (updateError) return res.status(400).json({ error: updateError.message });
-
-        if (validRole === 'barber') {
+        if (Object.keys(barberUpdate).length > 0) {
             const { error: barberError } = await supabase
                 .from('barber_profiles')
-                .update({ salon_name, salon_address, city, phone, bio, cover_image })
+                .update(barberUpdate)
                 .eq('user_id', user_id);
 
             if (barberError) {

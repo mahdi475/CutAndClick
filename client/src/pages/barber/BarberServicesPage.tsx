@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Loader2, Clock, DollarSign } from 'lucide-react';
+import ImageUpload from '../../components/common/ImageUpload';
 
 interface BarberServicesPageProps { user: any; }
 
@@ -101,7 +102,7 @@ const BarberServicesPage: React.FC<BarberServicesPageProps> = ({ user }) => {
                         <div className="w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                             {s.image_url
                                 ? <img src={s.image_url} alt={s.title} className="w-full h-full object-cover" />
-                                : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center text-gray-400 font-bold text-xl">✂</div>
+                                : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center text-gray-400 font-bold text-xl"></div>
                             }
                         </div>
                         {/* Info */}
@@ -183,12 +184,16 @@ const BarberServicesPage: React.FC<BarberServicesPageProps> = ({ user }) => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block font-inter text-[13px] text-gray-500 mb-1">Bild-URL</label>
-                                <input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                                    placeholder="https://..." className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black" />
-                                {form.image_url && form.image_url.startsWith('http') && (
-                                    <img src={form.image_url} alt="preview" className="mt-2 h-24 w-24 object-cover rounded-xl border border-gray-100" onError={e => (e.currentTarget.style.display = 'none')} />
-                                )}
+                                <label className="block font-inter text-[13px] text-gray-500 mb-2">Service-bild</label>
+                                <div className="flex justify-center">
+                                    <ImageUpload
+                                        onUploadSuccess={(url) => setForm(f => ({ ...f, image_url: url }))}
+                                        folderPath={`${user?.id}/services`}
+                                        currentImageUrl={form.image_url}
+                                        initials={form.title.slice(0, 2).toUpperCase() || 'S'}
+                                        size="md"
+                                    />
+                                </div>
                             </div>
                         </div>
 

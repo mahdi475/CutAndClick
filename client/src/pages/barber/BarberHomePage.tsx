@@ -71,7 +71,7 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
             {/* Header */}
             <div className="mb-8 flex justify-between items-start">
                 <div>
-                    <h1 className="font-inter font-bold text-[26px] text-black">{greeting}, {displayName}! 👋</h1>
+                    <h1 className="font-inter font-bold text-[26px] text-black">{greeting}, {displayName}!</h1>
                     <p className="font-inter text-[15px] text-gray-400 mt-1">Här är din översikt</p>
                 </div>
                 <button
@@ -88,7 +88,7 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
                 <StatCard icon={Calendar} label="Idag" value={stats.today} color="bg-black" />
                 <StatCard icon={TrendingUp} label="Denna veckan" value={stats.week} color="bg-blue-500" />
                 <StatCard icon={Users} label="Totalt bokningar" value={stats.total} color="bg-purple-500" />
-                <StatCard icon={Star} label="Betyg" value={user?.rating ? `★ ${user.rating}` : '—'} color="bg-yellow-500" />
+                <StatCard icon={Star} label="Betyg" value={user?.rating || '—'} color="bg-yellow-500" />
             </div>
 
             {/* Today's bookings */}
@@ -104,7 +104,7 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
                 ) : todayBookings.length === 0 ? (
                     <div className="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
                         <p className="font-inter text-gray-400">Inga bokningar idag</p>
-                        <p className="font-inter text-[12px] text-gray-300 mt-1">Njut av ledigheten! 🎉</p>
+                        <p className="font-inter text-[12px] text-gray-300 mt-1">Njut av ledigheten!</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">

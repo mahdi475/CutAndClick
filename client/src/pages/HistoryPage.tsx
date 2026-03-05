@@ -59,7 +59,7 @@ const BookingMenu: React.FC<{
                             className={`w-full px-4 py-3 text-left font-inter text-[14px] hover:bg-gray-50 transition-colors flex items-center gap-2 ${alreadyReviewed ? 'text-gray-300' : 'text-yellow-500'}`}
                             disabled={alreadyReviewed}
                         >
-                            {alreadyReviewed ? <><Check size={14} /><span>Omdöme lämnat ✓</span></> : <><Star size={14} /><span>Lämna omdöme</span></>}
+                            {alreadyReviewed ? <><Check size={14} /><span>Omdöme lämnat</span></> : <><Star size={14} /><span>Lämna omdöme</span></>}
                         </button>
                     )}
                     {booking.status === 'confirmed' && (
@@ -108,7 +108,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onBack }) => {
         const res = await fetch(`/api/bookings/${id}/cancel`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (!res.ok) setCancelMsg(data.error || 'Avbokning misslyckades');
-        else { setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b)); setCancelMsg('Bokning avbokad!'); }
+        else { setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b)); setCancelMsg('Bokning avbokad'); }
         setCancelling(null);
         setTimeout(() => setCancelMsg(''), 3000);
     };
@@ -118,7 +118,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onBack }) => {
     const handleReviewSuccess = (barberId: string) => {
         setReviewed(prev => new Set(prev).add(barberId));
         setReviewBooking(null);
-        showToast('Tack för ditt omdöme! ⭐');
+        showToast('Tack för ditt omdöme!');
     };
 
     return (
@@ -207,7 +207,7 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onBack }) => {
                                 <div className="flex items-center justify-between mt-1">
                                     <span className="text-[#888] font-roboto text-[13px]">{b.booking_date} • {b.service_price} kr</span>
                                     <span className={`font-roboto font-bold text-[12px] px-2 py-0.5 rounded-full ${b.status === 'completed' ? 'bg-green-50 text-green-600' : b.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-yellow-50 text-yellow-600'}`}>
-                                        {b.status === 'completed' ? '✅ UTFÖRD' : b.status === 'cancelled' ? '❌ AVBRYTEN' : '🕐'}
+                                        {b.status === 'completed' ? 'UTFÖRD' : b.status === 'cancelled' ? 'AVBRYTEN' : ''}
                                     </span>
                                 </div>
                             </div>

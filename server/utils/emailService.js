@@ -29,10 +29,10 @@ async function sendBookingConfirmation({ to, customerName, salonName, date, time
                 <body style="font-family: 'Inter', Arial, sans-serif; background: #f9f9f9; padding: 24px;">
                     <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 20px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
                         <div style="text-align: center; margin-bottom: 24px;">
-                            <h1 style="font-size: 28px; color: #111; margin: 0;">✂️ Cut & Click</h1>
+                            <h1 style="font-size: 28px; color: #111; margin: 0;">Cut & Click</h1>
                         </div>
                         <div style="background: #f0fff4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center;">
-                            <p style="font-size: 22px; margin: 0;">✅ Bokning bekräftad!</p>
+                            <p style="font-size: 22px; margin: 0;">Bokning bekräftad!</p>
                         </div>
                         <p style="color: #444; font-size: 16px;">Hej ${customerName}!</p>
                         <p style="color: #444; font-size: 15px;">Din bokning är bekräftad. Här är detaljerna:</p>
@@ -65,7 +65,7 @@ async function sendBookingReminder({ to, customerName, salonName, date, time }) 
             subject: `Påminnelse: Din bokning hos ${salonName} imorgon`,
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 24px;">
-                    <h2>📅 Påminnelse om din bokning</h2>
+                    <h2>Påminnelse om din bokning</h2>
                     <p>Hej ${customerName}! Din bokning hos <strong>${salonName}</strong> är <strong>imorgon den ${date} kl ${time}</strong>.</p>
                     <p style="color: #888; font-size: 13px;">Cut & Click</p>
                 </div>

@@ -28,30 +28,50 @@ async function protect(req, res, next) {
 // ----------------------------------------
 async function requireBarber(req, res, next) {
     try {
-        // Kontrollera rollen direkt från JWT-datan eller tidigare middleware
-        const role = req.user?.user_metadata?.role || req.user?.role;
+        // Vi kollar ALLTID databasen för att vara säkra, eftersom Supabase 'role' ofta är 'authenticated'
+        const { data, error } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', req.user.id)
+            .single();
 
-        if (!role) {
-            // Fallback: om rollen inte finns i token, gör ett snabbt DB-anrop men använd single()
-            const { data, error } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', req.user.id)
-                .single();
-
-            if (error || !data || data.role !== 'barber') {
-                return res.status(403).json({ error: 'Åtkomst nekad — kräver barber-roll' });
-            }
-            next();
-        } else if (role !== 'barber') {
-            return res.status(403).json({ error: 'Åtkomst nekad — kräver barber-roll' });
-        } else {
-            next();
+        if (error || !data) {
+            console.error('requireBarber: profil saknas i DB', error);
+            return res.status(403).json({
+                error: 'Konto-profil saknas',
+                debug: { userId: req.user.id, error: error?.message }
+            });
         }
+
+        if (data.role !== 'barber') {
+            console.log(`requireBarber: User ${req.user.id} has role "${data.role}", but "barber" is required.`);
+            return res.status(403).json({
+                error: 'Åtkomst nekad — kräver barber-roll',
+                debug: { userId: req.user.id, roleFound: data.role }
+            });
+        }
+
+        next();
     } catch (err) {
         console.error('requireBarber fel:', err);
         res.status(500).json({ error: 'Serverfel vid rollvalidering' });
     }
 }
 
-module.exports = { protect, requireBarber };
+// ----------------------------------------
+// optionalProtect — fångar upp user om token finns, annars fortsätt
+// ----------------------------------------
+async function optionalProtect(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return next();
+    }
+    const token = authHeader.split(' ')[1];
+    const { data, error } = await supabase.auth.getUser(token);
+    if (!error && data.user) {
+        req.user = data.user;
+    }
+    next();
+}
+
+module.exports = { protect, optionalProtect, requireBarber };

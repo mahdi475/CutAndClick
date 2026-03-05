@@ -81,7 +81,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                     </div>
                     {stars > 0 && (
                         <p className="font-inter text-[13px] text-gray-400 mt-2">
-                            {['', 'Dåligt 😞', 'Okej 😐', 'Bra 🙂', 'Mycket bra 😊', 'Utmärkt! 🤩'][stars]}
+                            {['', 'Dåligt', 'Okej', 'Bra', 'Mycket bra', 'Utmärkt!'][stars]}
                         </p>
                     )}
                 </div>
@@ -111,7 +111,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                     className="w-full h-[52px] bg-black rounded-2xl flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-gray-800 transition-colors">
                     {saving
                         ? <Loader2 size={18} className="text-white animate-spin" />
-                        : <span className="font-inter font-semibold text-white text-[16px]">Skicka omdöme ⭐</span>
+                        : <span className="font-inter font-semibold text-white text-[16px]">Skicka omdöme</span>
                     }
                 </button>
             </div>

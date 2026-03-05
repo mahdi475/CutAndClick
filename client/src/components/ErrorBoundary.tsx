@@ -27,7 +27,7 @@ class ErrorBoundary extends Component<Props, State> {
         if (this.state.hasError) {
             return (
                 <div className="min-h-screen bg-white flex flex-col items-center justify-center px-8 text-center">
-                    <div className="text-[64px] mb-4">🪒</div>
+                    <div className="text-[64px] mb-4 text-black font-inter font-bold">!</div>
                     <h1 className="font-inter font-bold text-[26px] text-black mb-2">
                         Något gick fel
                     </h1>

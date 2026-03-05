@@ -146,7 +146,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                                     <p className="font-inter text-[14px] text-gray-500">Applicera på fuktigt eller torrt hår. Forma efter önskad stil. Fråga din barber om råd för bästa resultat.</p>
                                 </div>
                                 <div className="bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
-                                    <p className="font-inter font-bold text-[13px] text-orange-600">🏪 Köps i salongen</p>
+                                    <p className="font-inter font-bold text-[13px] text-orange-600">Köps i salongen</p>
                                     <p className="font-inter text-[12px] text-orange-500 mt-0.5">Ingen onlineförsäljning — besök salongen för att köpa.</p>
                                 </div>
                             </div>
@@ -162,7 +162,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                         onClick={onBookNow}
                         className="w-full h-[66px] bg-black rounded-[20px] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform hover:bg-gray-800"
                     >
-                        <span className="text-white font-inter font-bold text-[18px]">Boka Nu 📅</span>
+                        <span className="text-white font-inter font-bold text-[18px]">Boka Nu</span>
                         <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                             <Calendar size={13} className="text-black" />
                         </div>
@@ -174,7 +174,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                             className="w-full h-[66px] bg-gray-200 rounded-[20px] flex items-center justify-center gap-3 cursor-not-allowed"
                         >
                             <Store size={20} className="text-gray-400" />
-                            <span className="text-gray-400 font-inter font-bold text-[18px]">Finns i salongen 🏪</span>
+                            <span className="text-gray-400 font-inter font-bold text-[18px]">Finns i salongen</span>
                         </button>
                         <p className="text-center text-gray-400 font-inter text-[12px] mt-2">Denna produkt kan köpas direkt i salongen</p>
                     </div>

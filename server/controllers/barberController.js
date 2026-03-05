@@ -27,7 +27,13 @@ async function getAllBarbers(req, res) {
 
         if (error) return res.status(400).json({ error: error.message });
 
-        const barbers = (data || []).map(formatBarber);
+        let favIds = new Set();
+        if (req.user) {
+            const { data: fv } = await supabase.from('favourites').select('barber_id').eq('user_id', req.user.id);
+            if (fv) favIds = new Set(fv.map(f => f.barber_id));
+        }
+
+        const barbers = (data || []).map(b => formatBarber(b, favIds));
         res.status(200).json(barbers);
     } catch (err) {
         console.error('getAllBarbers fel:', err);
@@ -57,7 +63,13 @@ async function searchBarbers(req, res) {
 
         if (error) return res.status(400).json({ error: error.message });
 
-        res.status(200).json((data || []).map(formatBarber));
+        let favIds = new Set();
+        if (req.user) {
+            const { data: fv } = await supabase.from('favourites').select('barber_id').eq('user_id', req.user.id);
+            if (fv) favIds = new Set(fv.map(f => f.barber_id));
+        }
+
+        res.status(200).json((data || []).map(b => formatBarber(b, favIds)));
     } catch (err) {
         console.error('searchBarbers fel:', err);
         res.status(500).json({ error: 'Serverfel vid sökning' });
@@ -88,7 +100,13 @@ async function getNearbyBarbers(req, res) {
         const { data, error } = await query;
         if (error) return res.status(400).json({ error: error.message });
 
-        res.status(200).json((data || []).map(formatBarber));
+        let favIds = new Set();
+        if (req.user) {
+            const { data: fv } = await supabase.from('favourites').select('barber_id').eq('user_id', req.user.id);
+            if (fv) favIds = new Set(fv.map(f => f.barber_id));
+        }
+
+        res.status(200).json((data || []).map(b => formatBarber(b, favIds)));
     } catch (err) {
         console.error('getNearbyBarbers fel:', err);
         res.status(500).json({ error: 'Serverfel vid närhetsfiltrering' });
@@ -142,7 +160,19 @@ async function getBarberById(req, res) {
             .eq('user_id', id)
             .order('day_of_week');
 
+        let isFavourited = false;
+        if (req.user) {
+            const { data: fv } = await supabase
+                .from('favourites')
+                .select('id')
+                .eq('user_id', req.user.id)
+                .eq('barber_id', id)
+                .single();
+            if (fv) isFavourited = true;
+        }
+
         const barber = formatBarber(profile);
+        barber.is_favourited = isFavourited;
 
         res.status(200).json({
             ...barber,
@@ -174,7 +204,7 @@ async function getBarberById(req, res) {
 // ─────────────────────────────────────────────
 // Helper: formaterar en barber_profile-rad till frontend-format
 // ─────────────────────────────────────────────
-function formatBarber(row) {
+function formatBarber(row, favIds = new Set()) {
     const user = row.users;
     return {
         id: row.user_id,
@@ -191,6 +221,7 @@ function formatBarber(row) {
         isPopular: (row.rating || 0) >= 4.5,
         barber_name: user?.username || '',
         created_at: row.created_at,
+        is_favourited: favIds.has(row.user_id)
     };
 }
 

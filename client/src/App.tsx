@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Home, Heart, User, History, LogOut, Lock } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { FavouritesProvider } from './context/FavouritesContext';
 import HomePage from './pages/HomePage';
 import BarberDetailPage from './pages/BarberDetailPage';
 import StoreServicesPage from './pages/StoreServicesPage';
@@ -70,9 +71,8 @@ const AppInner: React.FC = () => {
 
   // --- Screen Handlers ---
   const handleStartupFinish = () => {
-    setGuest();
     setScreen('app');
-    showToast('Välkommen som gäst 👋');
+    showToast('Välkommen som gäst');
   };
 
   const handleStartupRegister = () => setScreen('login');
@@ -81,20 +81,20 @@ const AppInner: React.FC = () => {
     // Navigate based on the passed role, since context 'user' is stale here
     if (role === 'barber') {
       setScreen('barberDashboard');
-      showToast(`Välkommen tillbaka, ${username}! 🎉`);
+      showToast(`Välkommen tillbaka, ${username}!`);
     } else {
       setScreen('app');
-      showToast(`Välkommen, ${username}! 👋`);
+      showToast(`Välkommen, ${username}!`);
     }
   };
 
   const handleRegisterSuccess = (role: 'customer' | 'barber') => {
     if (role === 'barber') {
       setScreen('barberDashboard');
-      showToast('Välkommen! Salongen är redo 🎉');
+      showToast('Välkommen! Salongen är redo');
     } else {
       setScreen('app');
-      showToast('Kontot är skapat! Välkommen 👋');
+      showToast('Kontot är skapat! Välkommen');
     }
   };
 
@@ -156,7 +156,7 @@ const AppInner: React.FC = () => {
   const handleBookNow = () => {
     requireLogin(
       () => setIsBooking(true),
-      '🔒 Logga in för att boka tid'
+      'Logga in för att boka tid'
     );
   };
 
@@ -175,7 +175,7 @@ const AppInner: React.FC = () => {
         favourites: 'dina favoriter',
         profile: 'din profil',
       };
-      showToast(`🔒 Logga in för att se ${labels[tab]}`);
+      showToast(`Logga in för att se ${labels[tab]}`);
       setTimeout(() => setScreen('login'), 1500);
       return;
     }
@@ -293,11 +293,25 @@ const AppInner: React.FC = () => {
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex flex-col w-64 h-full bg-white rounded-[30px] shadow-sm mr-6 p-6 justify-between flex-shrink-0">
         <div>
-          <div className="mb-10 px-4">
-            <h1 className="font-montserrat font-bold text-2xl text-[#2F2F2F]">Cut & Click</h1>
-            <p className="text-xs text-black/40 font-inter mt-1">
-              {isGuest ? '👤 Gäst' : user?.username}
-            </p>
+          <div className="mb-10 px-4 flex items-center gap-4">
+            <div
+              onClick={() => handleTabChange('profile')}
+              className="w-[50px] h-[50px] bg-[#2F2F2F] rounded-full overflow-hidden shadow-lg cursor-pointer transition-transform hover:scale-110 flex items-center justify-center shrink-0 border border-gray-100"
+            >
+              {user?.profile_pic_url ? (
+                <img src={user.profile_pic_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-inter font-bold text-[18px]">
+                  {(user?.username || 'G').charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-montserrat font-bold text-xl text-[#2F2F2F] truncate">Cut & Click</h1>
+              <p className="text-xs text-black/40 font-inter mt-0.5 truncate uppercase tracking-wider font-bold">
+                {isGuest ? 'Gäst' : user?.username}
+              </p>
+            </div>
           </div>
           <nav className="flex flex-col gap-2">
             {/* Home — always accessible */}
@@ -364,7 +378,13 @@ const AppInner: React.FC = () => {
             </button>
             {/* Profile */}
             <button onClick={() => handleTabChange('profile')} className="flex flex-col items-center justify-center w-12 h-12 relative">
-              <User size={24} color={activeTab === 'profile' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+              {user?.profile_pic_url ? (
+                <div className={`w-6 h-6 rounded-full overflow-hidden border-2 ${activeTab === 'profile' ? 'border-black' : 'border-gray-300'}`}>
+                  <img src={user.profile_pic_url} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <User size={24} color={activeTab === 'profile' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+              )}
               {activeTab === 'profile' && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
@@ -377,10 +397,11 @@ const AppInner: React.FC = () => {
   );
 };
 
-// Root wrapped with AuthProvider
 const App: React.FC = () => (
   <AuthProvider>
-    <AppInner />
+    <FavouritesProvider>
+      <AppInner />
+    </FavouritesProvider>
   </AuthProvider>
 );
 

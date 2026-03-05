@@ -6,18 +6,19 @@ const {
     getNearbyBarbers,
     getBarberById,
 } = require('../controllers/barberController');
+const { optionalProtect } = require('../middleware/authMiddleware');
 
 // VIKTIGT: specifika routes MÅSTE komma före :id-parametern
 // GET /api/barbers/search?q=xxx
-router.get('/search', searchBarbers);
+router.get('/search', optionalProtect, searchBarbers);
 
 // GET /api/barbers/nearby?city=xxx
-router.get('/nearby', getNearbyBarbers);
+router.get('/nearby', optionalProtect, getNearbyBarbers);
 
 // GET /api/barbers — alla barbers
-router.get('/', getAllBarbers);
+router.get('/', optionalProtect, getAllBarbers);
 
 // GET /api/barbers/:id — specifik barber med allt
-router.get('/:id', getBarberById);
+router.get('/:id', optionalProtect, getBarberById);
 
 module.exports = router;

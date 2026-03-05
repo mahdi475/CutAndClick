@@ -4,6 +4,9 @@ import {
   Phone, MapPin, Share2, Star, Clock, Loader2, Info,
   ShoppingBag, Scissors, LayoutGrid
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavouritesContext';
 import { BarberShop, BarberDetail, Product, Service } from '../types';
 import ProductCard from '../components/ProductCard';
 
@@ -84,7 +87,6 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [detail, setDetail] = useState<BarberDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFavourite, setIsFavourite] = useState(false);
   const [productCatFilter, setProductCatFilter] = useState('all');
 
   useEffect(() => {
@@ -113,7 +115,16 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
     }
   };
 
+  const { user } = useAuth();
   const info = detail || barber;
+
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorited = isFavorite(barber.id);
+
+  const handleToggleFavourite = async () => {
+    if (!user?.token) return;
+    await toggleFavorite(barber.id);
+  };
 
   return (
     <div className="flex flex-col min-h-full bg-white relative pb-10">
@@ -136,12 +147,18 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
             <ArrowLeft size={20} className="text-white" />
           </button>
           <div className="flex gap-3">
-            <button
-              onClick={() => setIsFavourite(f => !f)}
+            <motion.button
+              whileTap={{ scale: 0.8 }}
+              onClick={handleToggleFavourite}
               className="w-[45px] h-[45px] bg-white/10 backdrop-blur-sm rounded-[16px] border border-white/15 flex items-center justify-center shadow-md hover:bg-white/20 transition-colors"
             >
-              <Heart size={20} className={isFavourite ? 'text-red-400 fill-red-400' : 'text-white'} />
-            </button>
+              <motion.div
+                animate={favorited ? { scale: [1, 1.2, 1] } : {}}
+                transition={{ duration: 0.3 }}
+              >
+                <Heart size={20} className={favorited ? 'text-red-400 fill-red-400' : 'text-white'} />
+              </motion.div>
+            </motion.button>
             <button className="w-[45px] h-[45px] bg-white rounded-[16px] flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors">
               <MoreHorizontal size={20} className="text-black" />
             </button>
@@ -243,17 +260,17 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {[
                 { key: 'all', label: 'Alla' },
-                { key: 'hair', label: '💇 Hår' },
-                { key: 'beard', label: '🧔 Skägg' },
-                { key: 'skincare', label: '💆 Hudvård' },
-                { key: 'tools', label: '🔧 Verktyg' },
-                { key: 'general', label: '📦 Övrigt' },
+                { key: 'hair', label: 'Hår' },
+                { key: 'beard', label: 'Skägg' },
+                { key: 'skincare', label: 'Hudvård' },
+                { key: 'tools', label: 'Verktyg' },
+                { key: 'general', label: 'Övrigt' },
               ].map(cat => (
                 <button key={cat.key}
                   onClick={() => setProductCatFilter(cat.key)}
                   className={`flex-shrink-0 px-4 h-[36px] rounded-xl font-inter font-medium text-[13px] transition-all ${productCatFilter === cat.key
-                      ? 'bg-black text-white'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    ? 'bg-black text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                     }`}
                 >
                   {cat.label}

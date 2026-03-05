@@ -4,6 +4,7 @@ import {
     ChevronRight, Save, Loader2, X, Eye, EyeOff, Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ImageUpload from '../components/common/ImageUpload';
 
 interface ProfilePageProps {
     onBack: () => void;
@@ -15,7 +16,7 @@ type Section = 'main' | 'personal' | 'notifications' | 'settings';
 interface NotifPrefs { booking: boolean; newService: boolean; promotions: boolean; }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const token = user?.token;
     const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 
@@ -35,7 +36,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
     });
 
     // Password change
-    const [oldPw, setOldPw] = useState('');
     const [newPw, setNewPw] = useState('');
     const [showPw, setShowPw] = useState(false);
     const [pwSaving, setPwSaving] = useState(false);
@@ -55,7 +55,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
             method: 'PUT', headers,
             body: JSON.stringify({ username, location }),
         });
-        setSaveMsg(res.ok ? 'Profil uppdaterad! ✅' : 'Fel vid sparande');
+        if (res.ok) {
+            setSaveMsg('Profil uppdaterad!');
+            updateUser({ username, location });
+        } else {
+            setSaveMsg('Fel vid sparande');
+        }
         setSaving(false);
         setTimeout(() => setSaveMsg(''), 3000);
     };
@@ -69,15 +74,36 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
     const handlePasswordChange = async () => {
         if (!newPw || newPw.length < 6) { setPwMsg('Lösenordet måste vara minst 6 tecken'); return; }
         setPwSaving(true); setPwMsg('');
-        // In a real implementation, this would call Supabase auth.updateUser — via backend
         const res = await fetch('/api/auth/profile', {
             method: 'PUT', headers,
             body: JSON.stringify({ password: newPw }),
         });
-        setPwMsg(res.ok ? 'Lösenord ändrat! ✅' : 'Fel vid lösenordsbyte');
+        setPwMsg(res.ok ? 'Lösenord ändrat!' : 'Fel vid lösenordsbyte');
         setPwSaving(false);
-        setOldPw(''); setNewPw('');
+        setNewPw('');
         setTimeout(() => setPwMsg(''), 4000);
+    };
+
+    const handleUploadSuccess = async (url: string) => {
+        setSaving(true);
+        try {
+            const res = await fetch('/api/auth/profile', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ profile_pic_url: url }),
+            });
+            if (res.ok) {
+                setSaveMsg('Profilbild uppdaterad!');
+                updateUser({ profile_pic_url: url });
+            } else {
+                setSaveMsg('Kunde inte spara profilbildens sökväg');
+            }
+        } catch (err) {
+            setSaveMsg('Serverfel vid uppdatering');
+        } finally {
+            setSaving(false);
+            setTimeout(() => setSaveMsg(''), 3000);
+        }
     };
 
     const displayName = user?.username || 'Kund';
@@ -87,7 +113,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
     // ── Back from sub-section ───────────────────
     if (section !== 'main') {
         return (
-            <div className="flex flex-col min-h-full bg-white pb-24">
+            <div className="flex flex-col min-h-full bg-white pb-24 text-black">
                 <div className="px-6 pt-10 pb-5 flex items-center gap-4 border-b border-gray-100">
                     <button onClick={() => setSection('main')} className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
                         <ArrowLeft size={18} className="text-black" />
@@ -102,18 +128,29 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
                     {/* Personal Info */}
                     {section === 'personal' && (
                         <>
+                            <div className="flex flex-col items-center mb-4">
+                                <ImageUpload
+                                    onUploadSuccess={handleUploadSuccess}
+                                    folderPath={user?.id || 'anonymous'}
+                                    currentImageUrl={user?.profile_pic_url}
+                                    initials={initials}
+                                    size="lg"
+                                    fixedFileName="profile_pic.png"
+                                />
+                                <p className="text-[12px] text-gray-400 mt-2 font-inter text-black">Klicka för att byta profilbild</p>
+                            </div>
                             <div>
                                 <label className="block font-inter text-[13px] text-gray-500 mb-1">Användarnamn</label>
                                 <input value={username} onChange={e => setUsername(e.target.value)}
-                                    className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black" />
+                                    className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black text-black" />
                             </div>
                             <div>
                                 <label className="block font-inter text-[13px] text-gray-500 mb-1">Stad / Plats</label>
                                 <input value={location} onChange={e => setLocation(e.target.value)}
                                     placeholder="T.ex. Göteborg"
-                                    className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black" />
+                                    className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black text-black" />
                             </div>
-                            {saveMsg && <p className={`font-inter text-[14px] ${saveMsg.includes('✅') ? 'text-green-600' : 'text-red-500'}`}>{saveMsg}</p>}
+                            {saveMsg && <p className={`font-inter text-[14px] ${saveMsg.includes('Fel') || saveMsg.includes('Kunde inte') ? 'text-red-500' : 'text-green-600'}`}>{saveMsg}</p>}
                             <button onClick={handleSaveProfile} disabled={saving}
                                 className="w-full h-[52px] bg-black rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50">
                                 {saving ? <Loader2 size={16} className="text-white animate-spin" /> : <><Save size={16} className="text-white" /><span className="font-inter font-semibold text-white">Spara</span></>}
@@ -149,14 +186,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
                         <>
                             <div className="bg-gray-50 rounded-2xl p-4">
                                 <p className="font-inter font-semibold text-[15px] text-black mb-1">Betalsätt</p>
-                                <p className="font-inter text-[14px] text-gray-400">💳 Betalning sker i salongen vid besöket.</p>
+                                <p className="font-inter text-[14px] text-gray-400">Betalning sker i salongen vid besöket.</p>
                             </div>
-                            <div className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-3">
+                            <div className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-3 text-black">
                                 <p className="font-inter font-semibold text-[15px] text-black">Ändra lösenord</p>
                                 <input type={showPw ? 'text' : 'password'} value={newPw} onChange={e => setNewPw(e.target.value)}
                                     placeholder="Nytt lösenord (min 6 tecken)"
-                                    className="w-full h-[44px] border border-gray-200 rounded-xl px-4 font-inter text-[14px] outline-none focus:border-black" />
-                                {pwMsg && <p className={`font-inter text-[13px] ${pwMsg.includes('✅') ? 'text-green-600' : 'text-red-500'}`}>{pwMsg}</p>}
+                                    className="w-full h-[44px] border border-gray-200 rounded-xl px-4 font-inter text-[14px] outline-none focus:border-black text-black" />
+                                {pwMsg && <p className={`font-inter text-[13px] ${pwMsg.includes('Fel') || pwMsg.includes('minst 6 tecken') ? 'text-red-500' : 'text-green-600'}`}>{pwMsg}</p>}
                                 <button onClick={handlePasswordChange} disabled={pwSaving || !newPw}
                                     className="h-[44px] bg-black rounded-xl flex items-center justify-center gap-2 disabled:opacity-40">
                                     {pwSaving ? <Loader2 size={14} className="text-white animate-spin" /> : <span className="font-inter font-semibold text-white text-[14px]">Byt lösenord</span>}
@@ -175,7 +212,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
 
     // ── Main profile view ───────────────────────
     return (
-        <div className="flex flex-col min-h-full bg-white relative pb-24 px-6 pt-10">
+        <div className="flex flex-col min-h-full bg-white relative pb-24 px-6 pt-10 text-black">
 
             <div className="flex items-center gap-5 mb-8">
                 <button onClick={onBack} className="w-[44px] h-[44px] bg-white rounded-[14px] border border-gray-100 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
@@ -187,28 +224,33 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
             {/* Avatar + name */}
             <div className="flex flex-col items-center mb-8">
                 <div className="relative mb-4">
-                    <div className="w-[100px] h-[100px] rounded-full bg-black flex items-center justify-center border-2 border-black">
-                        <span className="text-white font-inter font-bold text-[30px]">{initials}</span>
-                    </div>
+                    <ImageUpload
+                        onUploadSuccess={handleUploadSuccess}
+                        folderPath={user?.id || 'anonymous'}
+                        currentImageUrl={user?.profile_pic_url}
+                        initials={initials}
+                        size="md"
+                        fixedFileName="profile_pic.png"
+                    />
                 </div>
-                <h2 className="text-black font-roboto font-semibold text-[26px] leading-tight">{displayName}</h2>
+                <h2 className="text-black font-roboto font-semibold text-[26px] leading-tight text-black">{displayName}</h2>
             </div>
 
             {/* Stats */}
             <div className="flex gap-4 mb-8">
                 <div className="flex-1 bg-[#FBFBFB] rounded-[24px] shadow-md p-4 flex flex-col items-center h-[88px] justify-center border border-gray-100">
                     <span className="text-[#979797] font-roboto text-[13px] text-center mb-1">Totala Bokningar</span>
-                    <span className="text-black font-roboto font-bold text-[28px] leading-none">{bookingCount}</span>
+                    <span className="text-black font-roboto font-bold text-[28px] leading-none text-black">{bookingCount}</span>
                 </div>
                 <div className="flex-1 bg-[#FBFBFB] rounded-[24px] shadow-md p-4 flex flex-col items-center h-[88px] justify-center border border-gray-100">
                     <span className="text-[#979797] font-roboto text-[13px] text-center mb-1">Konto Poäng</span>
-                    <span className="text-black font-roboto font-bold text-[28px] leading-none">{points}</span>
+                    <span className="text-black font-roboto font-bold text-[28px] leading-none text-black">{points}</span>
                 </div>
             </div>
 
             {/* Settings menu */}
             <h3 className="text-[#888] font-inter font-bold text-[16px] mb-3 pl-1">Inställningar</h3>
-            <div className="bg-[#FBFBFB] rounded-[24px] shadow-md p-5 flex flex-col gap-5 mb-6 border border-gray-100">
+            <div className="bg-[#FBFBFB] rounded-[24px] shadow-md p-5 flex flex-col gap-5 mb-6 border border-gray-100 text-black">
                 {[
                     { icon: User, color: 'bg-[#503DFF]', label: 'Personlig information', section: 'personal' as Section },
                     { icon: CreditCard, color: 'bg-[#FF9B9B]', label: 'Payment & konto', section: 'settings' as Section },
@@ -219,7 +261,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
                             <div className={`w-[32px] h-[32px] ${item.color} rounded-[8px] flex items-center justify-center`}>
                                 <item.icon size={16} className="text-white" />
                             </div>
-                            <span className="text-black font-inter font-bold text-[14px] flex-1 text-left">{item.label}</span>
+                            <span className="text-black font-inter font-bold text-[14px] flex-1 text-left text-black">{item.label}</span>
                             <ChevronRight size={16} className="text-gray-300" />
                         </button>
                         {i < arr.length - 1 && <div className="h-px bg-[#E1E1E1]" />}

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../supabase';
 
 // ----------------------------------------
 // Types
@@ -27,6 +28,7 @@ interface AuthContextType {
     isGuest: boolean;       // Gäst-läge (ingen token)
     isBarber: boolean;      // Inloggad barber
     login: (token: string, userData: Omit<AuthUser, 'token'>) => void;
+    updateUser: (data: Partial<AuthUser>) => void;
     logout: () => void;
     setGuest: () => void;
 }
@@ -47,7 +49,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const savedUser = localStorage.getItem('cut_click_user');
         if (savedUser) {
             try {
-                setUser(JSON.parse(savedUser));
+                const parsed = JSON.parse(savedUser);
+                setUser(parsed);
+                // TUNN BRAINROT DEBUGGING: Berätta för Supabase vem vi är
+                if (parsed.token) {
+                    console.log('--- SVENSK BRAINROT DEBUG ---');
+                    console.log('Jalla, vi har en token! Sätter session för Supabase nu...');
+                    supabase.auth.setSession({
+                        access_token: parsed.token,
+                        refresh_token: parsed.token, // Vi använder samma för enkelhet i denna flow
+                    }).then(({ error }) => {
+                        if (error) console.error('Aina stoppade oss: Fel vid setSession:', error.message);
+                        else console.log('Brrrr! Supabase session är LIVE. Nu kan du ladda upp bilder, brush.');
+                    });
+                }
             } catch {
                 localStorage.removeItem('cut_click_user');
             }
@@ -61,6 +76,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(fullUser);
         localStorage.setItem('cut_click_user', JSON.stringify(fullUser));
         localStorage.removeItem('cut_click_guest');
+
+        // BRAINROT: Sätt session direkt vid login också!
+        console.log('Legendary login! Sätter Supabase session för', userData.username);
+        supabase.auth.setSession({
+            access_token: token,
+            refresh_token: token,
+        });
+    };
+
+    const updateUser = (data: Partial<AuthUser>) => {
+        if (!user) return;
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        localStorage.setItem('cut_click_user', JSON.stringify(updatedUser));
     };
 
     const setGuest = () => {
@@ -82,7 +111,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const isBarber = user?.role === 'barber' && !!user.token;
 
     return (
-        <AuthContext.Provider value={{ user, isLoggedIn, isGuest, isBarber, login, logout, setGuest }}>
+        <AuthContext.Provider value={{ user, isLoggedIn, isGuest, isBarber, login, updateUser, logout, setGuest }}>
             {children}
         </AuthContext.Provider>
     );

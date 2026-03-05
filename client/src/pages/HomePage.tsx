@@ -152,7 +152,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
         <div className="flex flex-col">
           <div className="flex items-baseline gap-1">
             <span className="text-[#2F2F2F] font-montserrat font-semibold text-[26px]">Hej,</span>
-            <span className="text-[#2F2F2F] font-montserrat font-bold text-[26px]"> {displayName} 👋</span>
+            <span className="text-[#2F2F2F] font-montserrat font-bold text-[26px]"> {displayName}</span>
           </div>
           <h2 className="text-[#888888] font-inter font-medium text-[18px] tracking-wide mt-1">
             Utforska Barbershops
@@ -220,7 +220,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
                     <p className="font-inter font-semibold text-[14px] text-black">{b.name}</p>
                     <p className="font-inter text-[12px] text-[#888888]">{b.city}</p>
                   </div>
-                  <div className="ml-auto text-[12px] font-inter text-[#888888]">⭐ {b.rating}</div>
+                  <div className="ml-auto text-[12px] font-inter text-[#888888]">{b.rating}</div>
                 </button>
               ))
             )}
@@ -281,7 +281,10 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
         ) : (
           displayBarbers.map(barber => (
             <div key={barber.id} className="flex-shrink-0 mr-6 md:mr-0 snap-center md:w-full">
-              <BarberCard data={barber} onClick={() => onBarberClick(barber)} />
+              <BarberCard
+                data={barber}
+                onClick={() => onBarberClick(barber)}
+              />
             </div>
           ))
         )}

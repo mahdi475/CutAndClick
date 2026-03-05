@@ -135,7 +135,7 @@ async function createBooking(req, res) {
                 await createNotification({
                     user_id: customer_id,
                     type: 'booking_confirmed',
-                    title: `Bokning bekräftad! ✅`,
+                    title: `Bokning bekräftad!`,
                     body: `${serviceTitle} hos ${salonName} den ${booking_date} kl ${booking_time}`,
                 });
 
@@ -144,7 +144,7 @@ async function createBooking(req, res) {
                     await createNotification({
                         user_id: barberUserId,
                         type: 'new_booking',
-                        title: `Ny bokning inkom 📅`,
+                        title: `Ny bokning inkom`,
                         body: `${serviceTitle} • ${booking_date} kl ${booking_time}`,
                     });
                 }

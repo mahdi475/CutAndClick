@@ -1,0 +1,675 @@
+Cut & Click — Extension & Advanced Features Plan (Phase 11-20)
+Detta dokument beskriver nästa steg för Cut & Click för att gå från en stabil MVP till en premium, polerad produkt med fokus på användarupplevelse, "emotional design" och djupare integrationer.
+
+Mål med utökningen:
+- Erbjuda en sömlös profilhantering med riktig lagring av bilder.
+- Öka kundlojaliteten genom ett fungerande favoritsystem.
+- Modernisera inloggningen med sociala leverantörer (Google/Apple).
+- Förbättra datakvaliteten med adressvalvidering och tvingande mediauppladdning.
+- Skapa en "magisk" känsla genom subtila animationer och mikrointeraktioner.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 11 — Profile Picture & Storage Integration (Real Media)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Gå ifrån text-baserade bild-URL:er till riktig filuppladdning via Supabase Storage. Detta gäller både kundens profilbild (avatar) och salongens profil/omslagsbild.
+
+11.1 Supabase Storage Setup (Infrastruktur)
+- Skapa en publik bucket i Supabase Dashboard: `avatars`.
+- Konfigurera CORS i Supabase för att tillåta din domän (localhost i för tillfället).
+- Sätt RLS-policies för bucketen (SQL):
+```sql
+-- Tillåt alla att SE profilbilder
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+
+-- Tillåt inloggade användare att ladda upp till sin egen mapp
+CREATE POLICY "User Upload" ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Tillåt uppdatering/borttagning av egna bilder
+CREATE POLICY "User Update" ON storage.objects FOR UPDATE 
+USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+```
+
+11.2 Frontend — Smart ImageUpload-komponent
+Skapa en premium-komponent för bilduppladdning som hanterar beskärning och kompression.
+- Arkitektur: `client/src/components/common/ImageUpload.tsx`
+- Funktioner:
+  * Drag & Drop yta med SVG-ikoner (Lucide-React: UploadCloud).
+  * Förhandsgranskning före uppladdning med `URL.createObjectURL`.
+  * Automatisk rensning av gamla filer från storage vid ny uppladdning.
+  * Hantering av maximal filstorlek (2MB) med varnings-toast.
+- Props: `onUploadSuccess`, `aspectRatio`, `folderPath`.
+
+11.3 Hover Effect & "Change Photo" Interaction
+När en användare hovrar över sin profilbild (den runda cirkeln i inställningarna):
+- Bilden ska förmörkas något med en mjuk overlay (`bg-black/40`).
+- En "Byt bild"-ikon (Camera ikon) visas centrerat med en mjuk fade-in.
+- Framer Motion: Använd `whileHover={{ scale: 1.05 }}` och en transition på 0.2s.
+- CSS: `opacity: 0` → `opacity: 1` på overlayen vid hover (`group-hover`).
+
+11.4 Backend-synkronisering
+- Vid lyckad uppladdning: fetch-anrop till `PUT /api/auth/profile` för att spara den nya sökvägen.
+- Backend-kontroll: Verifiera att filen faktiskt finns i storage innan databasen uppdateras.
+- Controller-logik: `const { error } = await supabase.from('users').update({ profile_pic_url: path }).eq('id', userId)`.
+
+11.5 Error Handling & Rollbacks
+- Om DB-uppdateringen misslyckas efter filuppladdningen: Ta bort filen från Storage för att undvika "ghost files".
+- Visa en toast: "Kunde inte spara profilbilden, försök igen."
+
+Klart när:
+[ ] Supabase Bucket `avatars` är konfigurerad med RLS.
+[ ] Man kan ladda upp bild via drag-and-drop i inställningar.
+[ ] Hover-effekt med "Byt bild" fungerar sömlöst på runda profiler.
+[ ] Bilden sparas permanent och visas vid inloggning.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 12 — Favourited Stores (Fullständig Integration)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Göra favorittabellen till en central punkt för återkommande kunder och öka retention-graden.
+
+12.1 Database Relationships & Indexing
+- Säkerställ att `favourites` tabellen har en indexering på `(user_id, barber_id)`:
+```sql
+CREATE UNIQUE INDEX idx_unique_user_barber_fav ON favourites (user_id, barber_id);
+```
+- Kontrollera att `ON DELETE CASCADE` fungerar om en barber raderar sitt konto.
+- Lägg till en kolumn `created_at` för att kunna sortera favoriter på "Senast tillagda".
+
+12.2 Home Page Feature — Quick-add Interaction
+- På varje salongs-kort (HomePage): Lägg till en hjärt-ikon i övre högra hörnet.
+- Interaktion:
+  * Klick (inloggad): Hjärta fylls i med "pop" animation.
+  * Klick (gäst): Redirect till login med info-toast: "Logga in för att spara dina favoriter".
+- Optimistisk uppdatering: Använd `React Query`'s `onMutate` för att ändra hjärtats status i UI direkt.
+
+12.3 Favourites Page Redesign (The Gallery Feel)
+- Gå från en enkel lista till ett "Personligt Galleri".
+- Sidan `FavouritesPage.tsx` ska:
+  * Visa antal sparade butiker högst upp med en snygg rubrik: "Dina Favoriter (4)".
+  * Ha en "Empty state"-bild om inga favoriter finns ("Hitta din nästa favoritbarber ✂️").
+  * Möjlighet att ta bort favorit direkt med en "Ta bort"-modal.
+- Sortering: Lägg till en dropdown för att sortera på "Namn", "Stad" eller "Senast tillagda".
+
+12.4 Sync Logic & Global State
+- Använda en global Context (`FavouritesContext`) för att synka hjärt-status.
+- Context-metoder: `toggleFavourite(barberId)`, `isFavourite(barberId)`.
+- Re-fetch logic: Om man lägger till en favorit på DetailPage ska den dyka upp på HomePage direkt utan omladdning.
+
+12.5 Mobile Swipe actions
+- På mobilvyn: Tillåt användaren att svajpa vänster på en favorit i listan för att snabbt kunna radera den (`framer-motion`'s `drag="x"`).
+
+Klart när:
+[ ] Man kan lägga till favoriter från både Home och Store sidor.
+[ ] Hjärt-ikonen har en mjuk interaktiv animation (pop-effort).
+[ ] FavouritesPage visar riktig data och uppdateras i realtid.
+[ ] Global State hanterar favoriter konsekvent i hela appen.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 13 — Social Auth & User Onboarding (Future Proofing)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Förbereda plattformen för Google och Apple inloggning via Supabase för att sänka tröskeln för nya användare.
+
+13.1 Supabase Provider Setup (External Integration)
+- Steg-för-steg guide för aktivering:
+  1. Hämta Google Client ID & Secret från Google Cloud Console.
+  2. Hämta Apple Team ID, Key ID och ladda upp `.p8` filen till Supabase Auth Dashboard.
+  3. Konfigurera Redirect URL till `https://cutandclick.se/auth/callback`.
+  4. Aktivera "Sync with database" så att varje ny social login skapar en rad i `users` tabellen automatiskt via en Supabase Trigger.
+
+13.2 Frontend — Social Button Group Component
+- Skapa en komponent `SocialAuthGroup.tsx` som används i både Login och Register.
+- Branding:
+  * Google: Vit knapp, Google G-logga, "Fortsätt med Google".
+  * Apple: Svart knapp, vit Apple-logga, "Fortsätt med Apple".
+- Logic: `supabase.auth.signInWithOAuth({ provider: 'google' })`.
+
+13.3 "Missing Data" Flow & Forced Onboarding
+Eftersom social auth ofta bara ger e-post och namn, måste en ny flödeslogik skapas:
+- Om `user.role` är NULL (ny social användare):
+  * Tvingande redirect till `/onboarding`.
+  * Middleware i React som förhindrar navigering till Home innan roll och stad är satta.
+- Onboarding-steg:
+  1. Välj roll (Kund / Frisör).
+  2. Sätt Stad (Location).
+  3. Acceptera användarvillkor.
+
+13.4 Database Triggers (The Glue)
+```sql
+-- Automatisk profilskapande vid OAuth-login
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, email, username, role)
+  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name', NULL);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+Klart när:
+[ ] Knappar för Google/Apple finns i UI och leder till OAuth-flödet.
+[ ] Auth-redirect flödet (`/auth/callback`) fungerar logiskt.
+[ ] Onboarding-flödet fångar upp användare med ofullständiga profiler.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 14 — Address Selection API (Street Validation)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Eliminera "ful-data" i adressfält och se till att alla butiker hamnar rätt på kartan för korrekt filtrering.
+
+14.1 API Integration (Google Places Autocomplete)
+- Sluta be folk skriva sin adress manuellt i ett vanligt textfält.
+- Installera `react-google-places-autocomplete`.
+- Backend setup: Skapa en Proxy-endpoint eller använd miljövariabler i Frontend för att skydda din Google API-nyckel.
+
+14.2 RegisterPage Evolution (Input Logic)
+- Byt ut "Adress" fältet mot en Autocomplete-box i frisör-registreringen.
+- Data Extraction Logic:
+```javascript
+const handleAddressSelect = (place) => {
+  const addressComponents = place.value.address_components;
+  const city = addressComponents.find(c => c.types.includes('locality'))?.long_name;
+  const street = addressComponents.find(c => c.types.includes('route'))?.long_name;
+  const streetNumber = addressComponents.find(c => c.types.includes('street_number'))?.long_name;
+  // Spara i state
+};
+```
+
+14.3 Database: Location Data (JSONB Storage)
+- Spara inte bara gatuadress som text. Spara hela objektet i `geo_location` kolumnen:
+- Format: `{ lat: 57.7, lng: 11.9, full_address: "Storgatan 1, Göteborg" }`.
+- Detta möjliggör "Hitta närmsta salong" funktioner i framtiden.
+
+14.4 Validation Guard
+- Förhindra postning av formuläret om inte en giltig adress har valts från listan.
+- Visa rött felmeddelande: "Vänligen välj en adress från listan."
+
+Klart när:
+[ ] Man väljer gatuadress från en lista vid registrering (Google Places).
+[ ] Gatuadress och stad separeras korrekt i databasen.
+[ ] Inga ogiltiga adresser kan matas in för nya salonger.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 15 — Media Validation & Post Restrictions
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Säkerställa att plattformen ser lyxig ut genom att tvinga fram högkvalitativa bilder från butikerna och ta bort osäkra URL-länkar.
+
+15.1 Borttagning av URL-inmatning (Clean Sweep)
+- Ta bort ALLA textfält i Barber Dashboard där man tidigare klistrade in en bild-länk.
+- Varje gång en bild behövs: VISA EN UPPLADDNINGSKNAPP som kommunicerar direkt med Supabase Storage.
+
+15.2 "Minimum 3 Images" Rule för Tjänster
+- Validering i `CreateServiceModal.tsx` och `BarberServicesPage.tsx`:
+  * Knappen "Spara" är `disabled` tills `uploadedImages.length >= 3`.
+  * Visa en räknare: "Bilder: 1/3 (minst 3 krävs)".
+- Animation: När 3:e bilden laddas upp, gör spara-knappen grön med en subtil "bounce".
+
+15.3 Mandatory Store Photo (Home Page Card Ready)
+- Vid registrering av en salong: Steg 3 är nu "Ladda upp butiksbild".
+- Utan denna bild kan salongen inte publiceras (is_active = false tills bild finns).
+- Placeholder: Om en gammal salong saknar bild, generera en snygg gradient-bakgrund med salongens initialer.
+
+15.4 Product Detail Carousel & Lightbox
+- Implementera `ImageCarousel.tsx` med `framer-motion` (Drag).
+- Stöd för:
+  * Dots-indikatorer i botten.
+  * Zoom vid dubbelklick.
+  * Smooth swipe för att byta bild på mobil.
+- Lightbox: Vid klick på en bild, öppna den i fullskärm med en mjuk `AnimatePresence` overlay.
+
+Klart när:
+[ ] "Image URL" fält är helt raderade i koden.
+[ ] Minst 3 bilder krävs för nya tjänster både i Frontend och Backend.
+[ ] Karusell-visning fungerar felfritt på produktsidan och tjänstesidan.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 16 — Advanced Store Settings (Editable Salon Info)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Låta salonsägare ha full kontroll över sin presentation i realtid utan att behöva kontakta support.
+
+16.1 Settings Dashboard for Barber (The Management Hub)
+- Skapa en ny sektion i BarberDashboard: `SettingsWindow.tsx`.
+- Redigerbara fält med omedelbar validering:
+  * Salongsnamn: Max 50 tecken, tvingande fält.
+  * Bio: Textarea med teckenräknare (0/300).
+  * Telefon: Validering för svenska nummer format (`+46` prefix).
+  * Adress: Integrerad med Google Places API (från Fas 14).
+
+16.2 Real-time Preview (The "Barber Mirror" Feature)
+- Skapa en sid-vid-sid vy där barberaren ser sitt input-formulär till vänster och en "Live Mobile Preview" till höger.
+- Teknik: Använd en Iframe eller en skalad React-komponent (`scale: 0.8`) som visar `BarberDetailPage` med rörliga props.
+- Detta ger barberaren en omedelbar feedback-loop på hur deras ändringar påverkar kundupplevelsen.
+
+16.3 Gallery Management (Drag-and-Drop)
+- Implementera `GalleryUploader.tsx`.
+- Möjlighet att ladda upp upp till 10 bilder på salongen.
+- Teknik: `dnd-kit` för att tillåta omordning av bilder.
+- Backend: Spara ordningsföljd i en array i `barber_profiles` eller i den nya `post_media` tabellen.
+
+Klart när:
+[ ] Barber kan ändra alla detaljer om sin butik utan system-omstart.
+[ ] Preview-vyn i inställningar stämmer 100% överens med kundvyn.
+[ ] Gallerihantering med riktig bildlagring och omordning fungerar.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 17 — Emotional Design & "Movie Experience" (UI/UX)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Skapa en känsla av lyx genom subtila animationer som gör att appen känns "levande" och responsiv.
+
+17.1 Global Page Transitions (Framer Motion)
+- Inga sidbyten ska "hoppa". Varje sida ska ha en mjuk transition:
+```javascript
+const pageVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  exit: { opacity: 0, y: -10 }
+};
+```
+- Implementera i `App.tsx` med `AnimatePresence`.
+
+17.2 The "Micro-Dopamine" interactions
+- **Haptic Feedback**: Vid lyckad bokning (`navigator.vibrate(50)`).
+- **Shimmering Effects**: På knappar som "Boka Nu" för att locka ögat.
+- **Staggered Lists**: När HomePage laddas ska korten dyka upp ett efter ett (0.05s delay mellan varje).
+
+17.3 Startup Animation (The "Cinema" Intro)
+- När användaren klickar på "Kom igång" på StartupPage:
+  1. Loggan expanderar (`scale: 2`).
+  2. Bakgrunden blir vit (`white-out` effekt).
+  3. Den nya sidan "slajdar" in underifrån.
+
+Klart när:
+[ ] Sidorna glider snyggt vid navigering utan lagg.
+[ ] Alla knappar har en `whileTap` och `whileHover` state.
+[ ] Laddning av listor känns orkestrerad ("Intro-känsla").
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 18 — Detailed Technical Context & Database Extensions
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Säkerställa att arkitekturen är robust nog att hantera den nya datamängden.
+
+18.1 Nya Databaskolumner (SQL Deep Dive)
+```sql
+-- Uppdatera barber_profiles för galleri och verifiering
+ALTER TABLE barber_profiles 
+  ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS geo_location JSONB, 
+  ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
+
+-- Indexera favoriter för maximal prestanda (redundant check)
+CREATE INDEX IF NOT EXISTS idx_fav_user ON favourites (user_id);
+```
+
+18.2 Relationer för Multiple Media Implementation
+Eftersom tjänster och produkter nu kräver 3+ bilder, använder vi en separat tabell:
+```sql
+CREATE TABLE IF NOT EXISTS post_media (
+  id           SERIAL PRIMARY KEY,
+  post_id      UUID NOT NULL, 
+  storage_path TEXT NOT NULL,
+  position     INTEGER DEFAULT 0,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+18.3 Cleanup Logic (The "Janitor" Script)
+- Skapa en cron-job eller en backend-checker som raderar filer från Supabase Storage om motsvarande post tas bort i databasen.
+- Detta sparar pengar och lagringsutrymme på sikt.
+
+Klart när:
+[ ] SQL-migrationerna är verifierade i Supabase.
+[ ] `post_media` tabellen hanterar bild-ordning korrekt för karuseller.
+[ ] Inga "orphaned" filer finns kvar i storage efter radering.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 19 — Global State & Subscription Logic
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Optimera prestandan så att användaren inte märker av nätverksanrop vid vanliga interaktioner.
+
+19.1 FavouritesContext (Global UI)
+- Implementera en Context som hämtar alla favoriter vid första inloggning.
+- `isFavourite(barberId)` funktion som kan användas i alla komponenter utan att göra nya databasanrop.
+- Real-time updates: Använd Supabase Realtime för att lyssna på ändringar i `favourites` tabellen (för magisk känsla mellan olika enheter).
+
+19.2 UI State Management for Animations
+- Skapa ett `AnimationTheme` objekt i `theme.ts`:
+```typescript
+export const transitions = {
+  spring: { type: "spring", stiffness: 300, damping: 30 },
+  smooth: { duration: 0.4, ease: [0.43, 0.13, 0.23, 0.96] },
+  stagger: 0.1
+};
+```
+- Använd dessa konstanter konsekvent för att hela appen ska kännas harmonisk.
+
+19.3 Image Pre-fetching
+- När användaren hovrar över ett BarberCard på Home, börja ladda bilderna till den butikens karusell i bakgrunden (Pre-fetching).
+
+Klart när:
+[ ] Hjärt-ikoner uppdateras globalt omedelbart.
+[ ] Animationer har en enhetlig "känsla" (hårdhet/acceleration).
+[ ] Övergångar mellan Home och Detail är blixtsnabba.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 20 — Final Optimization & "Elite" Touch
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+De sista detaljerna som gör appen "Elite".
+
+20.1 Advanced Skeleton Shimmer
+- Uppgradera nuvarande gråa boxar till en "Shimmer" effekt:
+```css
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+```
+
+20.2 Semantic Voice Metadata
+- Lägg till ARIA-labels på alla nya interaktiva element (Hjärtan, Uploaders) för tillgänglighet.
+- SEO-optimering: Varje butikssida ska ha dynamiska Title-taggar (`[Salongsnamn] | Cut & Click`).
+
+20.3 Performance Audit (The 100/100 Goal)
+- Kör Lighthouse-analys.
+- Konvertera alla uppladdade bilder till `.webp` format i frontend innan de skickas till storage (minskar bandbredd med 60%).
+- Implementera "Native-like" scrollning (Overscroll behavior).
+
+Klart när:
+[ ] Appen får >90 poäng i Lighthouse Performance.
+[ ] Shimmer-effekten ser premium ut.
+[ ] Sidan känns som en native iOS/Android app.
+
+──────────────────────────────────────────────────────────────────────────────
+Detaljerad Teknisk Specifikation (Kod-arkiv)
+──────────────────────────────────────────────────────────────────────────────
+
+Här följer de viktigaste kod-mallen för att kickstarta implementeringen av de nya funktionerna.
+
+// 1. Framer Motion Page Transition Wrapper
+export const PageTransition = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -20 }}
+    transition={{ duration: 0.3, ease: "easeInOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
+// 2. Supabase Storage Upload Logic (Utility)
+export const uploadFile = async (bucket, folder, file) => {
+  const fileName = `${Date.now()}-${file.name}`;
+  const path = `${folder}/${fileName}`;
+  const { data, error } = await supabase.storage.from(bucket).upload(path, file);
+  if (error) throw error;
+  
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
+  return publicUrl;
+};
+
+// 3. Heart Pop Animation Variants
+export const heartVariants = {
+  unliked: { scale: 1 },
+  liked: { 
+    scale: [1, 1.4, 0.9, 1.1, 1],
+    transition: { duration: 0.4 }
+  }
+};
+
+// 4. Address Autocomplete Configuration
+export const autocompStyles = {
+  control: (provided) => ({
+    ...provided,
+    borderRadius: '12px',
+    padding: '4px',
+    border: '1px solid #e2e8f0',
+    boxShadow: 'none',
+    '&:hover': { border: '1px solid #cbd5e1' }
+  })
+};
+
+// 5. Emotional Design Checklist för varje komponent:
+- [ ] Har elementet en `whileHover` state?
+- [ ] Har elementet en `whileTap` (scale: 0.96) state?
+- [ ] Finns det en mjuk transition på färger? (300ms)
+- [ ] Är ikoner lätt animerade? (t.ex. rotera 5 grader vid hover)
+
+──────────────────────────────────────────────────────────────────────────────
+Sammanfattning av Utökningen
+──────────────────────────────────────────────────────────────────────────────
+Med dessa 10 faser (11-20) går Cut & Click från att vara en fungerande webbtjänst
+till att vara en marknadsledande plattform för frisörer. Fokus ligger på att 
+användaren aldrig ska känna att de väntar på appen, utan att appen alltid 
+responderar omedelbart och vackert på varje klick.
+
+Detta dokument ska användas som den enda källan för framtida utveckling och
+förfining av projektet för att bibehålla en enhetlig vision och teknisk höjd.
+
+[SLUT PÅ DOKUMENT - CUT & CLICK EXTENSION PLAN VERSION 1.0]
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 19 — Global State & Subscription Logic (Optimization)
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Göra appen snabb och intelligent genom att minimera nätverksanrop och hantera global data centralt.
+
+19.1 Context vs React Query (State Strategy)
+- Använd `React Query` för all server-data (bokningar, barber-listor).
+- Använd `Zustand` eller `Context` för UI-state (öppna modaler, valda filter, mörkt läge).
+- Implementera `staleTime: 1000 * 60 * 5` (5 minuter) för att undvika onödig laddning när användaren växlar mellan flikar.
+
+19.2 Real-time Subscription (Supabase Realtime)
+- Aktivera realtime på `bookings` tabellen.
+- När en kund bokar en tid ska barberaren få en omedelbar notis i sin dashboard utan omladdning.
+- Frontend: `supabase.channel('public:bookings').on('INSERT', ...)`.
+
+19.3 Smart Caching & Prefetching
+- När användaren hovrar över ett BarberCard på HomePage, börja "prefetch" på den salongens data.
+- Detta gör att klicket känns ögonblickligt.
+
+Klart när:
+[ ] Appen känns märkbart snabbare vid navigering.
+[ ] Realtime-notiser fungerar mellan kund och barberare.
+
+──────────────────────────────────────────────────────────────────────────────
+Fas 20 — Final Optimization & "Elite" Touch
+──────────────────────────────────────────────────────────────────────────────
+Mål:
+Sista finslipningen för att nå "Elite"-status på marknaden.
+
+20.1 Performance Audit (Lighthouse 90+)
+- Optimera alla bilder (WebP format).
+- Code splitting: Använd `React.lazy` för tunga sidor som BarberDashboard.
+- Minimera bundle size till under 200kb (Gzipped).
+
+20.2 Accessibility (A11y)
+- Säkerställ att alla knappar har `aria-label`.
+- Fullt stöd för skärmläsare och tangentbordsnavigering (Focus rings).
+
+20.3 Multi-language Support (i18n)
+- Förbered för engelska och arabiska integrationer (Lokaliserad marknad).
+
+──────────────────────────────────────────────────────────────────────────────
+Design System & UI Standardisering (Premium Tokens)
+──────────────────────────────────────────────────────────────────────────────
+Här definieras de visuella byggstenarna för att säkerställa konsistens oavsett vem som bygger nya sidor.
+
+1. Färgpalett (The "Nero" Palette)
+- **Primary**: `#0A0A0A` (Pitch Black) - För bakgrunder och djup.
+- **Secondary**: `#D4AF37` (Antique Gold) - För "Elite" status och premium-knappar.
+- **Accent**: `#FFFFFF` (Pure White) - För text och hög kontrast.
+- **Surface**: `#1A1A1A` - För kort (cards) och modaler.
+- **Error**: `#FF3B30` - För varningar.
+
+2. Typografi (Google Fonts: Outfit & Inter)
+- **Headings**: `Outfit`, FontWeight: 600 (Semibold).
+- **Body**: `Inter`, FontWeight: 400 (Regular).
+- **Accents**: `Outfit`, Italic för citat eller bio.
+
+3. Spacing System (8px Grid)
+- `xs`: 4px
+- `sm`: 8px
+- `md`: 16px
+- `lg`: 24px
+- `xl`: 32px
+- `xxl`: 48px
+
+4. Komponent-arkitektur (Examples)
+```css
+/* Premium Card Style */
+.premium-card {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.premium-card:hover {
+  border-color: var(--secondary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+```
+
+──────────────────────────────────────────────────────────────────────────────
+Utökad API Dokumentation (Phases 11-20)
+──────────────────────────────────────────────────────────────────────────────
+Här beskrivs de nya endpoints som krävs för fas 11-20.
+
+GET /api/favourites
+- Hämtar inloggad användares alla favoriter.
+- Returnerar: `Array<{ barber_id, salon_name, address, profile_image }>`.
+
+POST /api/favourites/:barberId
+- Lägger till/tar bort favorit (Toggle).
+- Returnerar: Status 201 (Created) eller 204 (Deleted).
+
+PUT /api/barber/settings
+- Uppdaterar salongs-info.
+- Payload: `JSON { name, bio, phone, address, gallery_images }`.
+
+POST /api/media/upload
+- Endpoint för att ladda upp temporära bilder för validering innan de sparas permanent.
+- Middleware: `multer` eller direkt integration med Supabase Storage.
+
+GET /api/barber/analytics
+- Hämtar statistik för en salong (Antal besök, bokningsfrekvens).
+
+PUT /api/user/onboarding
+- Sätter roll och detaljer för OAuth-användare.
+
+──────────────────────────────────────────────────────────────────────────────
+Säkerhet & Validering (Hardening)
+──────────────────────────────────────────────────────────────────────────────
+1. RLS (Row Level Security) - Djupdykning
+- Ingen användare ska kunna se en annan användares favoriter.
+- Barberare kan endast redigera sin egen `barber_profiles` rad.
+- Implementera `CHECK (auth.uid() = user_id)` på alla policies.
+
+2. Rate Limiting
+- Implementera `express-rate-limit` på `/api/auth` och `/api/media/upload`.
+- Max 5 bilduppladdningar per minut per IP-adress för att förhindra spam.
+
+3. Image Compression (Backend Side)
+- Använd `sharp` i Node.js för att komprimera alla inkommande bilder till 1200px bredd max.
+- Behåll 85% kvalitet för att balansera hastighet och estetik.
+- Konvertera automatiskt till `.webp` för bästa prestanda.
+
+──────────────────────────────────────────────────────────────────────────────
+Framtida Roadmap — Fas 21 till 30 (Elite Evolution)
+──────────────────────────────────────────────────────────────────────────────
+Här blickar vi ännu längre framåt för att dominera marknaden helt.
+
+Fas 21: In-app Chat (Barber <-> Kund).
+- Realtidskommunikation för sista-minuten ändringar.
+Fas 22: Betalningsintegration (Stripe/Klarna) för förbetalda bokningar.
+Fas 23: Lojalitetsprogram (Samla poäng vid varje klippning, 10:e klippet gratis).
+Fas 24: AI-Stylist (Ladda upp bild, få förslag på frisyr baserat på ansiktsform).
+Fas 25: Franchise-stöd (Hantera flera salonger under samma konto).
+Fas 26: Marketplace för barber-utrustning (B2B försäljning mellan salonger).
+Fas 27: Intelligent Schema-optimering (AI föreslår bästa arbetstider baserat på historik).
+Fas 28: Dark Mode / Light Mode Auto-switch baserat på tid på dygnet.
+Fas 29: Video-profiler (Korta 5-sekunders klipp som visar salongen "in action").
+Fas 30: Global Expansion (Stöd för flera valutor och tidszoner).
+
+──────────────────────────────────────────────────────────────────────────────
+Testning & Kvalitetssäkring (QA Strategy)
+──────────────────────────────────────────────────────────────────────────────
+För att bibehålla en premiumkänsla krävs att inga buggar når produktion.
+
+1. Unit Testing (Vitest/Jest)
+- Varje utility-funktion i `storageHelper.js` ska ha 100% testtäckning.
+- Valideringslogik för adresser och telefonnummer ska testas mot ogiltig data.
+
+2. Component Testing (Cypress/Playwright)
+- Testa "Happy Path" för bokningar: Start -> Välj Tjänst -> Välj Tid -> Bekräfta.
+- Testa "Social Login": Simulera auth-callback och verifiera redirect till Onboarding.
+
+3. Visual Regression Testing
+- Använd verktyg som `Loki` eller `Chromatic` för att säkerställa att animationer (Framer Motion) inte flyttar element på ett oönskat sätt mellan olika skärmstorlekar.
+
+──────────────────────────────────────────────────────────────────────────────
+Deployment & CI/CD (Production Ready)
+──────────────────────────────────────────────────────────────────────────────
+1. Miljöer (Environments)
+- **Staging**: `staging.cutandclick.se` (Synkad med develop-branschen).
+- **Production**: `cutandclick.se` (Synkad med main-branschen).
+
+2. Automatisering
+- Varje PR till `main` ska trigga en automatisk check av:
+  * `npm run lint` (Inga varningar tillåtna).
+  * `npm run build` (Säkerställ att Vite-bundle genereras korrekt).
+  * Check av Supabase schema-divergens.
+
+3. Monitorering (Livelyness)
+- Implementera `Sentry` för frontend-error tracking.
+- Uppsättning av `UptimeRobot` för att varna om API:et eller databasen går ner.
+
+──────────────────────────────────────────────────────────────────────────────
+Developer Guidelines (För teamet)
+──────────────────────────────────────────────────────────────────────────────
+- **No Emojis**: Använd endast professionella SVG-ikoner (Lucide).
+- **TypeScript First**: Inga `any` typer är tillåtna i de nya faserna.
+- **Atomic Components**: Bryt ner UI i minsta möjliga bitar för återanvändning.
+- **Mobile First**: Designa alltid för 375px bredd först, expandera sedan till Desktop.
+
+──────────────────────────────────────────────────────────────────────────────
+Mobil-strategi & Offline Support (The App Feel)
+──────────────────────────────────────────────────────────────────────────────
+För att Cut & Click ska kännas som en native-app även när den körs i webbläsaren.
+
+1. PWA Integration (Progressive Web App)
+- Konfigurera `vite-plugin-pwa` för att tillåta installation på hemskärmen.
+- Skapa en `manifest.json` med temafärger (Pitch Black för statusfältet).
+- Implementera en Service Worker som cachar de viktigaste sidorna (Home, Bookings).
+
+2. Offline-logik
+- Om nätverket försvinner ska användaren fortfarande kunna se sina kommande bokningar.
+- Implementera `react-query` med `persistQueryClient` för att spara data i `localStorage` eller `IndexedDB`.
+- Visa en subtil "Offline-indikator" i headern istället för att låta appen krascha.
+
+3. Touch Optimeringar
+- Implementera "Pull-to-refresh" på bokningssidan.
+- Använd `framer-motion` för att göra listor "scroll-bounce"-vänliga som på iOS.
+- Minimera klick-latens genom att använda `active:scale-95` på alla touchable ytor.
+
+──────────────────────────────────────────────────────────────────────────────
+Slutsats & Vision
+──────────────────────────────────────────────────────────────────────────────
+Genom att följa denna plan kommer Cut & Click inte bara vara ett verktyg för att boka tid, utan en upplevelse som användare vill återkomma till. Det är kombinationen av teknisk stabilitet (Supabase/Node) och visuell magi (Framer Motion/Emotional Design) som skapar vinnaren på marknaden.
+
+

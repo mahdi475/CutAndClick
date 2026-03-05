@@ -13,6 +13,7 @@ export interface BarberShop {
   total_reviews?: number;
   barber_name?: string;
   created_at?: string;
+  is_favourited?: boolean;
 }
 
 export interface BarberDetail extends BarberShop {

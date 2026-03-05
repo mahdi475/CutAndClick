@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { Home, Scissors, ShoppingBag, Calendar, User } from 'lucide-react';
+import { Home, Scissors, ShoppingBag, Calendar, User, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BarberHomePage from './barber/BarberHomePage';
 import BarberServicesPage from './barber/BarberServicesPage';
 import BarberProductsPage from './barber/BarberProductsPage';
 import BarberSchedulePage from './barber/BarberSchedulePage';
 import BarberBookingsPage from './barber/BarberBookingsPage';
+import BarberSettingsPage from './barber/BarberSettingsPage';
 
-type BarberTab = 'home' | 'services' | 'products' | 'schedule' | 'bookings';
+type BarberTab = 'home' | 'services' | 'products' | 'schedule' | 'bookings' | 'settings';
 
 const TABS: { id: BarberTab; icon: React.ElementType; label: string }[] = [
     { id: 'home', icon: Home, label: 'Hem' },
     { id: 'services', icon: Scissors, label: 'Tjänster' },
     { id: 'products', icon: ShoppingBag, label: 'Produkter' },
     { id: 'schedule', icon: Calendar, label: 'Schema' },
-    { id: 'bookings', icon: User, label: 'Bokningar' },
+    { id: 'bookings', icon: Calendar, label: 'Bokningar' },
+    { id: 'settings', icon: Settings, label: 'Inställningar' },
 ];
 
 interface BarberDashboardProps {
@@ -32,6 +34,7 @@ const BarberDashboardPage: React.FC<BarberDashboardProps> = ({ onSignOut }) => {
             case 'products': return <BarberProductsPage user={user} />;
             case 'schedule': return <BarberSchedulePage user={user} />;
             case 'bookings': return <BarberBookingsPage user={user} />;
+            case 'settings': return <BarberSettingsPage user={user} />;
             default: return null;
         }
     };

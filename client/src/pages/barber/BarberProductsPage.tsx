@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Loader2 } from 'lucide-react';
+import ImageUpload from '../../components/common/ImageUpload';
 
 interface BarberProductsPageProps { user: any; }
 
@@ -11,11 +12,11 @@ interface ItemPost {
 interface FormData { title: string; description: string; price: string; image_url: string; category: string; }
 
 const CATEGORIES = [
-    { value: 'hair', label: '💇 Hår' },
-    { value: 'beard', label: '🧔 Skägg' },
-    { value: 'skincare', label: '💆 Hudvård' },
-    { value: 'tools', label: '🔧 Verktyg' },
-    { value: 'general', label: '📦 Övrigt' },
+    { value: 'hair', label: 'Hår' },
+    { value: 'beard', label: 'Skägg' },
+    { value: 'skincare', label: 'Hudvård' },
+    { value: 'tools', label: 'Verktyg' },
+    { value: 'general', label: 'Övrigt' },
 ];
 
 const EMPTY: FormData = { title: '', description: '', price: '', image_url: '', category: 'general' };
@@ -82,7 +83,7 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
 
             {/* Info banner */}
             <div className="mx-5 mt-4 px-4 py-3 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="font-inter text-[13px] text-blue-600">ℹ️ Produkterna visas som katalog — <strong>ingen onlineköp</strong>. Kunder köper i salongen.</p>
+                <p className="font-inter text-[13px] text-blue-600">Information: Produkterna visas som katalog — <strong>ingen onlineköp</strong>. Kunder köper i salongen.</p>
             </div>
 
             {toast && (
@@ -102,7 +103,7 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
                             <div className="w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                                 {p.image_url
                                     ? <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" />
-                                    : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center text-2xl">🛍️</div>
+                                    : <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-100 flex items-center justify-center text-2xl"></div>
                                 }
                             </div>
                             <div className="flex-1 min-w-0">
@@ -178,16 +179,19 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block font-inter text-[13px] text-gray-500 mb-1">Bild-URL</label>
-                                <input value={form.image_url} onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                                    placeholder="https://..."
-                                    className="w-full h-[48px] border border-gray-200 rounded-xl px-4 font-inter text-[15px] outline-none focus:border-black" />
-                                {form.image_url.startsWith('http') && (
-                                    <img src={form.image_url} alt="preview" className="mt-2 h-20 w-20 rounded-xl object-cover border border-gray-100" onError={e => (e.currentTarget.style.display = 'none')} />
-                                )}
+                                <label className="block font-inter text-[13px] text-gray-500 mb-2">Produkt-bild</label>
+                                <div className="flex justify-center">
+                                    <ImageUpload
+                                        onUploadSuccess={(url) => setForm(f => ({ ...f, image_url: url }))}
+                                        folderPath={`${user?.id}/products`}
+                                        currentImageUrl={form.image_url}
+                                        initials={form.title.slice(0, 2).toUpperCase() || 'P'}
+                                        size="md"
+                                    />
+                                </div>
                             </div>
                             <div className="p-3 bg-blue-50 rounded-xl">
-                                <p className="font-inter text-[12px] text-blue-600">📌 Produkten kan köpas i salongen.</p>
+                                <p className="font-inter text-[12px] text-blue-600">Produkten kan köpas i salongen.</p>
                             </div>
                         </div>
                         <button onClick={handleSave} disabled={!form.title || !form.price || saving}

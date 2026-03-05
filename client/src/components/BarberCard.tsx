@@ -1,6 +1,9 @@
 import React from 'react';
 import { Star, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { BarberShop } from '../types';
+import { useFavorites } from '../context/FavouritesContext';
+import { useAuth } from '../context/AuthContext';
 
 interface BarberCardProps {
   data: BarberShop;
@@ -8,6 +11,21 @@ interface BarberCardProps {
 }
 
 const BarberCard: React.FC<BarberCardProps> = ({ data, onClick }) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isLoggedIn } = useAuth();
+  const favorited = isFavorite(data.id);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      // Fallback or alert handled by parent? Actually better to handle here for quick UI
+      // But the task says "prompt guest".
+      // Let's assume the parent (HomePage) handles the click if we want to show a toast.
+      // Or we just call the toggleFavorite which returns false.
+    }
+    toggleFavorite(data.id);
+  };
+
   return (
     <div
       onClick={onClick}
@@ -24,9 +42,18 @@ const BarberCard: React.FC<BarberCardProps> = ({ data, onClick }) => {
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
 
       {/* Heart Icon Button (Top Right) */}
-      <button className="absolute top-4 right-4 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/40 transition-colors z-10" onClick={(e) => e.stopPropagation()}>
-        <Heart size={20} color="white" />
-      </button>
+      <motion.button
+        whileTap={{ scale: 0.8 }}
+        onClick={handleToggle}
+        className="absolute top-4 right-4 w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/40 transition-colors z-10"
+      >
+        <motion.div
+          animate={favorited ? { scale: [1, 1.2, 1] } : {}}
+          transition={{ duration: 0.3 }}
+        >
+          <Heart size={20} className={favorited ? 'text-red-500 fill-red-500' : 'text-white'} />
+        </motion.div>
+      </motion.button>
 
       {/* Floating Info Card (Bottom) */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[224px] h-[75px] bg-[#1D1D1D]/40 backdrop-filter backdrop-blur-[20px] rounded-[15px] border border-white/10 shadow-lg flex flex-col justify-center px-4">

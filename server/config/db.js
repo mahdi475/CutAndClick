@@ -2,9 +2,11 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-// Använd service_role key på backend — den kringgår RLS (korrekt för server-side kod)
-// Anon key ska BARA användas i frontend
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Använd service_role key på backend om den finns och inte är en placeholder
+const supabaseKey = (serviceKey && serviceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE')
+    ? serviceKey
+    : process.env.SUPABASE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {

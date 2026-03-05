@@ -45,6 +45,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
                     username: data.user.username || email,
                     role: data.user.role || 'customer',
                     location: data.user.location,
+                    profile_pic_url: data.user.profile_pic_url,
                 };
                 login(data.session.access_token, userData);
                 onLogin(data.user.username || email, data.user.role || 'customer');
@@ -142,7 +143,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
                 <div className="flex flex-col gap-4 mb-8">
                     {/* Google */}
                     <button
-                        onClick={() => onShowToast('Google login kommer snart 🔜')}
+                        onClick={() => onShowToast('Google login kommer snart')}
                         className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
@@ -158,7 +159,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
 
                     {/* Apple */}
                     <button
-                        onClick={() => onShowToast('Apple login kommer snart 🔜')}
+                        onClick={() => onShowToast('Apple login kommer snart')}
                         className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">

@@ -67,7 +67,7 @@ const BarberSchedulePage: React.FC<BarberSchedulePageProps> = ({ user }) => {
             headers,
             body: JSON.stringify(hours),
         });
-        if (res.ok) { setToast('Öppettiderna är sparade! ✅'); setToastType('success'); }
+        if (res.ok) { setToast('Öppettiderna är sparade!'); setToastType('success'); }
         else { setToast('Fel vid sparande, försök igen'); setToastType('error'); }
         setSaving(false);
         setTimeout(() => setToast(''), 3000);
