@@ -1,0 +1,12 @@
+{
+  "error": {
+    "__isAuthError": true,
+    "name": "AuthApiError",
+    "status": 400,
+    "code": "invalid_credentials"
+  },
+  "data": {
+    "user": null,
+    "session": null
+  }
+}

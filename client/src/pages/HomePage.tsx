@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, SlidersHorizontal, X, Bell } from 'lucide-react';
 import BarberCard from '../components/BarberCard';
 import NotificationsPanel from '../components/NotificationsPanel';
+import { AnimatePresence } from 'framer-motion';
 import { BarberShop } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -253,7 +254,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
       </div>
 
       {/* Barber Cards */}
-      <div className="pl-7 mt-8 pb-10 flex overflow-x-auto snap-x snap-mandatory no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 md:pl-7 md:pr-7 md:pb-12 md:overflow-visible">
+      <div className="pl-7 mt-8 pb-10 flex overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 md:pl-7 md:pr-7 md:pb-12 md:overflow-visible">
         {loading ? (
           // Loading skeletons
           [1, 2, 3].map(i => (
@@ -296,12 +297,14 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
       <div className="absolute top-[600px] right-[50px] w-[200px] h-[200px] bg-purple-400 opacity-10 blur-[80px] rounded-full pointer-events-none z-0 mix-blend-multiply" />
 
       {/* Notifications panel */}
-      {showNotifs && (
-        <NotificationsPanel
-          token={user?.token || null}
-          onClose={() => setShowNotifs(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showNotifs && (
+          <NotificationsPanel
+            token={user?.token || null}
+            onClose={() => setShowNotifs(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { X, Bell, Calendar, Star, CheckCheck, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Notification {
     id: number;
@@ -59,10 +60,22 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token, onClose 
     return (
         <>
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 z-40" 
+                onClick={onClose} 
+            />
 
             {/* Panel */}
-            <div className="fixed top-0 right-0 h-full w-[320px] max-w-[90vw] bg-white z-50 flex flex-col shadow-2xl">
+            <motion.div 
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="fixed top-0 right-0 h-full w-[320px] max-w-[90vw] bg-white z-50 flex flex-col shadow-2xl"
+            >
                 {/* Header */}
                 <div className="px-5 pt-10 pb-4 flex items-center justify-between border-b border-gray-100">
                     <div>
@@ -109,7 +122,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ token, onClose 
                         </button>
                     ))}
                 </div>
-            </div>
+            </motion.div>
         </>
     );
 };

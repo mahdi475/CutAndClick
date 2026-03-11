@@ -1,9 +1,21 @@
-const supabase = require('./config/db');
+const fs = require('fs');
+require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
 
-async function testFullLogin() {
-    const email = 'alexveklund@gmail.com';
-    const password = 'password123'; // whatever the user's password is... wait, I don't know it!
+async function testLogin() {
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    const email = 'Firat05_@hotmail.com';
+    const password = 'password123';
 
-    // So let's just make an HTTP request to the running server!
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        
+        fs.writeFileSync('output.txt', JSON.stringify({ error, data }, null, 2), 'utf-8');
+    } catch (e) {
+        fs.writeFileSync('output.txt', e.toString(), 'utf-8');
+    }
 }
-testFullLogin();
+testLogin();

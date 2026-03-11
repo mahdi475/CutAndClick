@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Lock, LogIn, Loader2 } from 'lucide-react';
+import { Lock, LogIn, Loader2, ArrowLeft } from 'lucide-react';
+import { motion, Variants } from 'framer-motion';
 import { useAuth, AuthUser } from '../context/AuthContext';
 import { supabase } from '../supabase';
 
@@ -8,9 +9,15 @@ interface LoginPageProps {
     onSignUp: () => void;
     onShowToast: (msg: string) => void;
     onGuest?: () => void;
+    onBack?: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, onGuest }) => {
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+};
+
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, onGuest, onBack }) => {
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -85,7 +92,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
         <div className="w-full min-h-screen relative bg-white overflow-hidden flex flex-col items-center justify-center py-10">
 
             {/* --- Top Gradient Blob --- */}
-            <div
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, y: [-10, 10, -10], scale: [1, 1.02, 1] }}
+                transition={{ 
+                    opacity: { duration: 0.8 }, 
+                    y: { repeat: Infinity, duration: 7, ease: "easeInOut" }, 
+                    scale: { repeat: Infinity, duration: 9, ease: "easeInOut" } 
+                }}
                 className="absolute w-[441px] h-[431px] left-[-100px] md:left-0 -top-[134px] rotate-[21deg] origin-top-left rounded-[9999px] pointer-events-none z-0"
                 style={{
                     background: 'linear-gradient(180deg, black 0%, #606060 4%, #797979 21%, #CDCDCD 48%, #FCFCFC 75%, #FCFCFC 91%)'
@@ -93,13 +107,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
             />
 
             {/* --- Main Content Container --- */}
-            <div className="relative z-10 w-full max-w-[380px] px-6 flex flex-col">
+            <motion.div 
+                initial="hidden"
+                animate="visible"
+                variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                className="relative z-10 w-full max-w-[380px] px-6 flex flex-col"
+            >
+
+                {/* --- Back Button --- */}
+                {onBack && (
+                    <button 
+                        onClick={onBack}
+                        className="absolute -top-12 -left-2 p-2 text-black/80 hover:text-black hover:bg-black/5 rounded-full transition-colors flex items-center justify-center z-20"
+                        aria-label="Gå tillbaka"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+                )}
 
                 {/* --- Title --- */}
-                <div className="mb-8">
+                <motion.div variants={itemVariants} className="mb-8">
                     <h1 className="text-black/90 font-inter font-bold text-[32px]">Login</h1>
                     <p className="text-gray-500 mt-2">Welcome back to Cut & Click</p>
-                </div>
+                </motion.div>
 
                 {/* --- Error Message --- */}
                 {error && (
@@ -109,7 +139,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                 )}
 
                 {/* --- Form Inputs --- */}
-                <div className="flex flex-col gap-5 mb-8">
+                <motion.div variants={itemVariants} className="flex flex-col gap-5 mb-8">
                     {/* Email */}
                     <div className="w-full h-[65px] bg-[#FCFCFC] rounded-[15px] border border-black/50 flex items-center px-6 transition-colors focus-within:border-black">
                         <div className="w-[24px] flex justify-center mr-3">
@@ -139,14 +169,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                             className="w-full bg-transparent outline-none text-black/70 font-inter font-light text-[15px] placeholder:text-black/40"
                         />
                     </div>
-                </div>
+                </motion.div>
 
-                {/* --- Login Button --- */}
-                <div className="flex justify-end mb-12">
-                    <button
+                <motion.div variants={itemVariants} className="flex justify-end mb-12">
+                    <motion.button
+                        whileTap={{ scale: 0.95 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="w-[120px] h-[54px] bg-[#363636]/90 rounded-[15px] flex items-center justify-between px-5 hover:bg-black transition-colors active:scale-95 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-[120px] h-[54px] bg-[#363636]/90 rounded-[15px] flex items-center justify-between px-5 hover:bg-black shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <Loader2 size={20} className="text-white animate-spin mx-auto" />
@@ -158,16 +188,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                                 </div>
                             </>
                         )}
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
 
                 {/* --- Social Login Buttons --- */}
-                <div className="flex flex-col gap-4 mb-8">
+                <motion.div variants={itemVariants} className="flex flex-col gap-4 mb-8">
                     {/* Google */}
-                    <button
+                    <motion.button
+                        whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                         onClick={() => handleOAuth('google')}
                         disabled={loading}
-                        className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group disabled:opacity-60"
+                        className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm hover:bg-gray-200 overflow-hidden group disabled:opacity-60"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -178,13 +209,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                             </svg>
                         </div>
                         <span className="flex-1 text-center text-black font-poppins font-medium text-[16px]">Login with Google</span>
-                    </button>
+                    </motion.button>
 
                     {/* Apple */}
-                    <button
+                    <motion.button
+                        whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                         onClick={() => handleOAuth('apple')}
                         disabled={loading}
-                        className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group disabled:opacity-60"
+                        className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm hover:bg-zinc-800 overflow-hidden group disabled:opacity-60"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 384 512" className="w-6 h-6 fill-black">
@@ -192,11 +224,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                             </svg>
                         </div>
                         <span className="flex-1 text-center text-white font-poppins font-medium text-[16px]">Login with Apple</span>
-                    </button>
-                </div>
+                    </motion.button>
+                </motion.div>
 
                 {/* --- Footer Link --- */}
-                <div className="flex flex-col items-center gap-3 text-[14px] font-poppins">
+                <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 text-[14px] font-poppins">
                     <div className="flex">
                         <span className="text-black font-normal">Don't have an account? </span>
                         <span className="w-1"> </span>
@@ -211,9 +243,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
                             <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                         </button>
                     )}
-                </div>
+                </motion.div>
 
-            </div>
+            </motion.div>
 
         </div>
     );

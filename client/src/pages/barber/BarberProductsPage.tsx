@@ -153,6 +153,32 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
                             <button onClick={() => setShowModal(false)}><X size={22} className="text-gray-400" /></button>
                         </div>
                         <div className="flex flex-col gap-4">
+                            {/* Premium Cover Image Upload */}
+                            <div className="w-full h-[180px] rounded-2xl overflow-hidden relative shadow-sm border border-gray-100 bg-gray-50 group">
+                                <ImageUpload
+                                    onUploadSuccess={(url) => setForm(f => ({ ...f, image_url: url }))}
+                                    folderPath={`${user?.id}/products`}
+                                    currentImageUrl={form.image_url}
+                                    initials=" "
+                                    size="lg"
+                                    shape="square"
+                                    variant="banner"
+                                />
+                                {!form.image_url && (
+                                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-white/80 gap-2">
+                                        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
+                                            <span className="text-[20px]">+</span>
+                                        </div>
+                                        <span className="font-inter font-bold uppercase tracking-wider text-[11px]">Lägg till produktbild</span>
+                                    </div>
+                                )}
+                                {form.image_url && (
+                                    <div className="absolute top-3 left-3 pointer-events-none bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full">
+                                        <span className="font-inter font-bold uppercase tracking-wider text-[10px] text-white">Produktbild</span>
+                                    </div>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="block font-inter text-[13px] text-gray-500 mb-1">Titel *</label>
                                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -176,18 +202,6 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
                                         className="w-full h-[48px] border border-gray-200 rounded-xl px-3 font-inter text-[14px] outline-none focus:border-black bg-white">
                                         {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                                     </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block font-inter text-[13px] text-gray-500 mb-2">Produkt-bild</label>
-                                <div className="flex justify-center">
-                                    <ImageUpload
-                                        onUploadSuccess={(url) => setForm(f => ({ ...f, image_url: url }))}
-                                        folderPath={`${user?.id}/products`}
-                                        currentImageUrl={form.image_url}
-                                        initials={form.title.slice(0, 2).toUpperCase() || 'P'}
-                                        size="md"
-                                    />
                                 </div>
                             </div>
                             <div className="p-3 bg-blue-50 rounded-xl">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Heart, Clock, MapPin, Star, Calendar, Store } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Product, Service } from '../types';
 
 interface ProductDetailPageProps {
@@ -24,7 +25,8 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
 
             {/* ── Hero image ───────────────────────────── */}
             <div className="relative w-full h-[460px] rounded-b-[25px] overflow-hidden">
-                <img
+                <motion.img
+                    layoutId={`store-item-image-${item.id}`}
                     src={item.image || placeholderImg}
                     alt={item.title}
                     className="absolute inset-0 w-full h-full object-cover"
@@ -61,7 +63,12 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
             </div>
 
             {/* ── Tabs ─────────────────────────────────── */}
-            <div className="px-6 mt-6 flex items-center gap-6 border-b border-gray-100 pb-3">
+            <motion.div 
+                initial={{ opacity: 0, y: 15 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.3, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+                className="px-6 mt-6 flex items-center gap-6 border-b border-gray-100 pb-3"
+            >
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`font-inter font-semibold text-[17px] pb-1 transition-all ${activeTab === 'overview' ? 'text-black border-b-2 border-black' : 'text-black/40'}`}
@@ -74,10 +81,15 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                 >
                     Detaljer
                 </button>
-            </div>
+            </motion.div>
 
             {/* ── Content ──────────────────────────────── */}
-            <div className="px-6 mt-6">
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+                className="px-6 mt-6"
+            >
                 {activeTab === 'overview' ? (
                     <>
                         {/* Stats row */}
@@ -95,7 +107,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                         </div>
 
                         {/* Description */}
-                        <p className="text-[#555] font-roboto text-[16px] leading-[26px]">
+                        <p className="text-[#555] font-roboto text-[16px] leading-[26px]" style={{ WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)', maskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)' }}>
                             {description || (isService
                                 ? 'En komplett genomgång av hår och skägg. Tjänsten inkluderar konsultation, precisionsklippning och styling.'
                                 : 'Professionell produkt av hög kvalitet. Tillgänglig för köp direkt i salongen.'
@@ -153,20 +165,25 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onB
                         )}
                     </>
                 )}
-            </div>
+            </motion.div>
 
             {/* ── Bottom CTA ───────────────────────────── */}
             <div className="absolute bottom-6 left-0 w-full px-6 z-50">
                 {isService ? (
-                    <button
-                        onClick={onBookNow}
-                        className="w-full h-[66px] bg-black rounded-[20px] flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform hover:bg-gray-800"
+                    <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                        onClick={() => {
+                            if (window.navigator?.vibrate) window.navigator.vibrate(50);
+                            onBookNow?.();
+                        }}
+                        className="w-full h-[66px] bg-black rounded-[20px] flex items-center justify-center gap-3 shadow-xl hover:bg-gray-800 outline-none"
                     >
                         <span className="text-white font-inter font-bold text-[18px]">Boka Nu</span>
                         <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                             <Calendar size={13} className="text-black" />
                         </div>
-                    </button>
+                    </motion.button>
                 ) : (
                     <div className="relative">
                         <button

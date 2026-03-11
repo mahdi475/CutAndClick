@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Home, Heart, User, History, LogOut, Lock } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FavouritesProvider } from './context/FavouritesContext';
 import HomePage from './pages/HomePage';
@@ -98,7 +99,7 @@ const AppInner: React.FC = () => {
     }
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     const token = user?.token;
     if (token) {
       fetch('/api/auth/logout', {
@@ -106,7 +107,7 @@ const AppInner: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => { /* ignore */ });
     }
-    logout();
+    await logout();
     setScreen('startup');
     setActiveTab('home');
     setSelectedBarber(null);
@@ -218,6 +219,7 @@ const AppInner: React.FC = () => {
           onLogin={handleLoginSuccess}
           onSignUp={() => setScreen('register')}
           onShowToast={showToast}
+          onBack={() => setScreen('startup')}
           onGuest={() => {
             setGuest();
             setScreen('app');
@@ -358,7 +360,24 @@ const AppInner: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-white lg:rounded-[30px] lg:shadow-2xl">
         <div className={`h-full overflow-y-auto no-scrollbar ${shouldShowBottomNav ? 'pb-24 lg:pb-0' : ''}`}>
-          {renderContent()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={
+                isBookingConfirmed ? 'confirmed' :
+                isBooking ? 'booking' :
+                selectedItem ? 'item' :
+                viewingStoreServices ? 'store' :
+                selectedBarber ? 'barber' : activeTab
+              }
+              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -4 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full w-full"
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Mobile Bottom Nav */}
@@ -367,18 +386,18 @@ const AppInner: React.FC = () => {
             {/* Home */}
             <button onClick={() => handleTabChange('home')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <Home size={24} color={activeTab === 'home' && !selectedBarber && !selectedItem ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'home' && !selectedBarber && !selectedItem ? 2.5 : 2} />
-              {(activeTab === 'home' && !selectedBarber && !selectedItem) && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
+              {(activeTab === 'home' && !selectedBarber && !selectedItem) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
             </button>
             {/* History */}
             <button onClick={() => handleTabChange('history')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <History size={24} color={activeTab === 'history' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'history' ? 2.5 : 2} />
-              {activeTab === 'history' && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
+              {activeTab === 'history' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
             {/* Favourites */}
             <button onClick={() => handleTabChange('favourites')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <Heart size={24} color={activeTab === 'favourites' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'favourites' ? 2.5 : 2} />
-              {activeTab === 'favourites' && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
+              {activeTab === 'favourites' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
             {/* Profile */}
@@ -390,7 +409,7 @@ const AppInner: React.FC = () => {
               ) : (
                 <User size={24} color={activeTab === 'profile' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
               )}
-              {activeTab === 'profile' && <div className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
+              {activeTab === 'profile' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
           </div>

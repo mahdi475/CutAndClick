@@ -49,7 +49,8 @@ const BarberSettingsPage: React.FC<BarberSettingsPageProps> = ({ user }) => {
                         phone: data.barber.phone || '',
                         website: data.barber.website || '',
                         bio: data.barber.bio || '',
-                        cover_image: data.barber.cover_image || ''
+                        cover_image: data.barber.cover_image || '',
+                        profile_pic_url: data.profile_pic_url || data.user?.profile_pic_url || prev.profile_pic_url
                     }));
                 }
                 setLoading(false);
@@ -100,44 +101,53 @@ const BarberSettingsPage: React.FC<BarberSettingsPageProps> = ({ user }) => {
 
     return (
         <div className="flex flex-col min-h-full bg-white pb-24 text-black">
-            <div className="px-6 pt-12 pb-5 border-b border-gray-100 bg-white sticky top-0 z-10">
-                <h1 className="font-inter font-bold text-[24px] text-black">Salongens Inställningar</h1>
-                <p className="font-inter text-[14px] text-gray-400 mt-1">Hantera din salongs profil och bilder</p>
-            </div>
+            <div className="flex flex-col gap-6">
 
-            <div className="px-6 pt-6 flex flex-col gap-6">
-
-                {/* Images Section */}
-                <div className="flex flex-col gap-6">
-                    <div>
-                        <label className="block font-inter text-[13px] text-gray-500 mb-3 uppercase tracking-wider font-bold">Omslagsbild (Banner)</label>
-                        <div className="w-full h-40 rounded-2xl overflow-hidden relative border border-gray-100 bg-gray-50 flex items-center justify-center">
-                            <ImageUpload
-                                onUploadSuccess={(url) => handleImageSuccess('cover', url)}
-                                folderPath={`${user?.id}/salon`}
-                                currentImageUrl={formData.cover_image}
-                                initials="BANNER"
-                                size="lg"
-                                fixedFileName="salon_cover.png"
-                            />
+                {/* Header & Images Section combined for proper design */}
+                <div className="flex flex-col mb-8">
+                    {/* Banner Section */}
+                    <div className="relative w-full h-48 md:h-64 bg-gray-50 rounded-b-3xl overflow-hidden shadow-sm group border-b border-gray-100">
+                        <ImageUpload
+                            onUploadSuccess={(url) => handleImageSuccess('cover', url)}
+                            folderPath={`${user?.id}/salon`}
+                            currentImageUrl={formData.cover_image}
+                            initials="LADDA UPP BANNER"
+                            size="lg"
+                            shape="square"
+                            variant="banner"
+                            fixedFileName="salon_cover.png"
+                        />
+                        <div className="absolute top-4 left-6 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full pointer-events-none">
+                            <span className="text-[11px] text-white/90 font-inter font-bold uppercase tracking-wider">Omslagsbild</span>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center -mt-16 relative z-20">
-                        <label className="block font-inter text-[13px] text-gray-500 mb-2 uppercase tracking-wider font-bold bg-white px-2 rounded">Profilbild</label>
-                        <ImageUpload
-                            onUploadSuccess={(url) => handleImageSuccess('profile', url)}
-                            folderPath={`${user?.id}/avatar`}
-                            currentImageUrl={formData.profile_pic_url}
-                            initials={formData.username.slice(0, 2).toUpperCase()}
-                            size="lg"
-                            fixedFileName="profile_pic.png"
-                        />
+                    {/* Logo/Profile Section Overlap */}
+                    <div className="px-6 -mt-14 md:-mt-20 flex items-end gap-4 relative z-20 pointer-events-none">
+                        <div className="bg-white p-1 rounded-full shadow-xl pointer-events-auto">
+                            <ImageUpload
+                                onUploadSuccess={(url) => handleImageSuccess('profile', url)}
+                                folderPath={`${user?.id}/avatar`}
+                                currentImageUrl={formData.profile_pic_url}
+                                initials={formData.username.slice(0, 2).toUpperCase()}
+                                size="lg"
+                                shape="circle"
+                                fixedFileName="profile_pic.png"
+                            />
+                        </div>
+                        <div className="pb-2 md:pb-6 pointer-events-auto">
+                            <h2 className="text-black font-inter font-bold text-[24px] leading-tight drop-shadow-sm md:text-white md:drop-shadow-md">
+                                {formData.salon_name || 'Din Salong'}
+                            </h2>
+                            <p className="text-gray-500 font-inter text-sm md:text-gray-200">
+                                Salongslogotyp & Omslagsbild
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Info Fields */}
-                <div className="flex flex-col gap-4 mt-4">
+                <div className="px-6 flex flex-col gap-4 mt-4">
 
                     {/* Namn */}
                     <div>
@@ -213,20 +223,22 @@ const BarberSettingsPage: React.FC<BarberSettingsPageProps> = ({ user }) => {
                     </div>
                 </div>
 
-                {saveMsg && (
-                    <div className={`p-4 rounded-xl font-inter text-[14px] text-center ${saveMsg.includes('Fel') || saveMsg.includes('Rätta') ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
-                        {saveMsg}
-                    </div>
-                )}
+                <div className="px-6 mb-10 flex flex-col gap-4">
+                    {saveMsg && (
+                        <div className={`p-4 rounded-xl font-inter text-[14px] text-center ${saveMsg.includes('Fel') || saveMsg.includes('Rätta') ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                            {saveMsg}
+                        </div>
+                    )}
 
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full h-[56px] bg-black text-white rounded-2xl flex items-center justify-center gap-2 font-inter font-bold text-[16px] shadow-lg active:scale-95 disabled:opacity-50 transition-all"
-                >
-                    {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                    Spara Inställningar
-                </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="w-full h-[56px] bg-black text-white rounded-2xl flex items-center justify-center gap-2 font-inter font-bold text-[16px] shadow-lg active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                        {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                        Spara Inställningar
+                    </button>
+                </div>
             </div>
         </div>
     );

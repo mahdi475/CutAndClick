@@ -205,7 +205,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ item, onBack, onConfirm }) =>
                                     onClick={() => handleDayClick(cell)}
                                     disabled={cell.month !== 'curr' || cell.disabled}
                                     className={`relative w-9 h-9 flex items-center justify-center rounded-full transition-all
-                    ${isSelected ? 'bg-black shadow-lg' : ''}
+                    ${isSelected ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)] scale-105' : ''}
                     ${!isSelected && isToday ? 'border-2 border-black/20' : ''}
                     ${cell.month !== 'curr' || cell.disabled ? 'opacity-25 cursor-not-allowed' : 'hover:bg-gray-100 cursor-pointer'}
                   `}

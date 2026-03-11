@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Service, Product } from '../types';
 
 interface StoreItemCardProps {
@@ -13,12 +14,15 @@ const StoreItemCard: React.FC<StoreItemCardProps> = ({ item, type, onClick }) =>
   const subtitle = 'description' in item ? item.description : item.subtitle;
 
   return (
-    <div
+    <motion.div
       onClick={() => onClick?.(item)}
-      className="relative flex-shrink-0 w-[177px] md:w-full h-[217px] rounded-[12px] overflow-hidden bg-[#D9D9D9] mr-4 md:mr-0 shadow-lg group cursor-pointer active:scale-95 transition-transform duration-200"
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+      className="relative flex-shrink-0 w-[177px] md:w-full h-[217px] rounded-[12px] overflow-hidden bg-[#D9D9D9] mr-4 md:mr-0 shadow-lg group cursor-pointer transition-colors duration-200"
     >
       {/* Image */}
-      <img
+      <motion.img
+        layoutId={`store-item-image-${item.id}`}
         src={item.image}
         alt={item.title}
         className="absolute inset-0 w-full h-full object-cover"
@@ -28,8 +32,10 @@ const StoreItemCard: React.FC<StoreItemCardProps> = ({ item, type, onClick }) =>
       <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
 
       {/* Glassmorphism Info Box */}
-      <div className="absolute bottom-[24px] left-1/2 -translate-x-1/2 w-[156px] md:w-[90%] h-[49px] bg-[#1D1D1D]/30 backdrop-blur-[9px] rounded-[7px] border border-white/10 shadow-lg flex items-center justify-between px-3">
-
+      <div className="absolute bottom-[24px] left-1/2 -translate-x-1/2 w-[156px] md:w-[90%] h-[49px] bg-[#1D1D1D]/30 backdrop-blur-[9px] rounded-[7px] border border-white/10 shadow-lg flex items-center justify-between px-3 overflow-hidden group-hover:bg-[#1D1D1D]/40 transition-colors">
+        
+        {/* Shimmer Effect wrapper */}
+        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
         {/* Text Info */}
         <div className="flex flex-col justify-center h-full max-w-[65%]">
           <span className="text-white font-inter font-semibold text-[11px] truncate leading-tight">
@@ -62,7 +68,7 @@ const StoreItemCard: React.FC<StoreItemCardProps> = ({ item, type, onClick }) =>
         <Plus size={10} className="text-white" />
       </div>
 
-    </div>
+    </motion.div>
   );
 };
 

@@ -9,6 +9,8 @@ interface ImageUploadProps {
     currentImageUrl?: string;
     initials?: string;
     size?: 'sm' | 'md' | 'lg';
+    shape?: 'circle' | 'square';
+    variant?: 'avatar' | 'banner';
     fixedFileName?: string;
 }
 
@@ -18,6 +20,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     currentImageUrl,
     initials,
     size = 'md',
+    shape = 'circle',
+    variant = 'avatar',
     fixedFileName
 }) => {
     const [uploading, setUploading] = useState(false);
@@ -27,7 +31,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     const sizeClasses = {
         sm: 'w-[48px] h-[48px] text-[14px]',
         md: 'w-[100px] h-[100px] text-[30px]',
-        lg: 'w-[140px] h-[140px] text-[40px]'
+        lg: variant === 'banner' ? 'w-full h-full' : 'w-[140px] h-[140px] text-[40px]'
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +101,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     const displayUrl = previewUrl || currentImageUrl;
 
     return (
-        <div className="relative group cursor-pointer" onClick={triggerFileInput}>
+        <div 
+            className={`relative group cursor-pointer ${variant === 'banner' ? 'w-full h-full' : 'w-fit'}`} 
+            onClick={triggerFileInput}
+        >
             <input
                 type="file"
                 ref={fileInputRef}
@@ -109,7 +116,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`${sizeClasses[size]} rounded-full overflow-hidden bg-black flex items-center justify-center border-2 border-black relative transition-all`}
+                className={`${sizeClasses[size]} ${shape === 'square' ? 'rounded-2xl' : 'rounded-full'} overflow-hidden bg-black flex items-center justify-center border-2 border-black relative transition-all`}
             >
                 {displayUrl ? (
                     <img

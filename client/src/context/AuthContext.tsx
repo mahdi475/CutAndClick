@@ -120,7 +120,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('cut_click_user');
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await supabase.auth.signOut();
         setUser(null);
         localStorage.removeItem('cut_click_user');
         localStorage.removeItem('cut_click_guest');

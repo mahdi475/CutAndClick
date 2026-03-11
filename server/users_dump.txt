@@ -1,0 +1,411 @@
+{
+  "users": [
+    {
+      "id": "b075780a-6afb-49d2-a727-8b672a29d8ee",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "firat05_@hotmail.com",
+      "email_confirmed_at": "2026-03-11T22:14:00.277545Z",
+      "phone": "",
+      "confirmed_at": "2026-03-11T22:14:00.277545Z",
+      "last_sign_in_at": "2026-03-11T22:14:00.279317Z",
+      "app_metadata": {
+        "provider": "google",
+        "providers": [
+          "google"
+        ]
+      },
+      "user_metadata": {
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocInMMKEan3yhJkZFT6zYNGAXjRKY_132e62NWOEKjTt34itcQk=s96-c",
+        "email": "firat05_@hotmail.com",
+        "email_verified": true,
+        "full_name": "Firat Kaya",
+        "iss": "https://accounts.google.com",
+        "name": "Firat Kaya",
+        "phone_verified": false,
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocInMMKEan3yhJkZFT6zYNGAXjRKY_132e62NWOEKjTt34itcQk=s96-c",
+        "provider_id": "102974978690855393554",
+        "sub": "102974978690855393554"
+      },
+      "identities": null,
+      "created_at": "2026-03-11T22:14:00.254083Z",
+      "updated_at": "2026-03-11T22:14:00.289132Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "1c2ec055-339e-4461-8198-914df906a8de",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "alexveklund@gmail.com",
+      "email_confirmed_at": "2026-03-11T16:07:58.751483Z",
+      "phone": "",
+      "confirmation_sent_at": "2026-03-11T16:07:41.73824Z",
+      "confirmed_at": "2026-03-11T16:07:58.751483Z",
+      "last_sign_in_at": "2026-03-11T19:09:22.37943Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email",
+          "google"
+        ]
+      },
+      "user_metadata": {
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKZQRD1UPZXfbJ7qm-H_BqTpJAxrJhW_-Z530PH3LtI-aC87g=s96-c",
+        "email": "alexveklund@gmail.com",
+        "email_verified": true,
+        "full_name": "Alex Veklund",
+        "iss": "https://accounts.google.com",
+        "name": "Alex Veklund",
+        "phone_verified": false,
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocKZQRD1UPZXfbJ7qm-H_BqTpJAxrJhW_-Z530PH3LtI-aC87g=s96-c",
+        "provider_id": "107997898355172092085",
+        "role": "customer",
+        "sub": "107997898355172092085"
+      },
+      "identities": null,
+      "created_at": "2026-03-11T16:07:41.716625Z",
+      "updated_at": "2026-03-11T19:09:22.394481Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "3b9ccef0-2776-4888-a963-50ce4c6c6d9c",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "almamargareta@icloud.com",
+      "email_confirmed_at": "2026-03-11T14:59:25.684503Z",
+      "phone": "",
+      "confirmation_sent_at": "2026-03-11T14:59:12.118019Z",
+      "confirmed_at": "2026-03-11T14:59:25.684503Z",
+      "last_sign_in_at": "2026-03-11T17:29:08.915245Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email": "almamargareta@icloud.com",
+        "email_verified": true,
+        "phone_verified": false,
+        "role": "barber",
+        "sub": "3b9ccef0-2776-4888-a963-50ce4c6c6d9c"
+      },
+      "identities": null,
+      "created_at": "2026-03-11T14:59:12.061155Z",
+      "updated_at": "2026-03-11T17:29:08.920298Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "b82190b3-8888-4d0d-abb9-096dff533eab",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "create@volturiano.com",
+      "email_confirmed_at": "2026-03-05T09:36:50.155844Z",
+      "phone": "",
+      "confirmation_sent_at": "2026-03-05T09:34:00.735947Z",
+      "confirmed_at": "2026-03-05T09:36:50.155844Z",
+      "last_sign_in_at": "2026-03-05T09:37:19.630878Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email": "create@volturiano.com",
+        "email_verified": true,
+        "phone_verified": false,
+        "role": "customer",
+        "sub": "b82190b3-8888-4d0d-abb9-096dff533eab"
+      },
+      "identities": null,
+      "created_at": "2026-03-05T09:34:00.712998Z",
+      "updated_at": "2026-03-05T09:37:19.63794Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "5b7fd63a-a835-4cd1-aca5-f69e0a4baad3",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "hello@volturiano.com",
+      "email_confirmed_at": "2026-03-04T23:56:26.891246Z",
+      "phone": "",
+      "confirmed_at": "2026-03-04T23:56:26.891246Z",
+      "last_sign_in_at": "2026-03-05T09:45:08.15646Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-04T23:56:26.886253Z",
+      "updated_at": "2026-03-05T09:45:08.159307Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "47c98839-dcfb-4fa9-9215-791fb75f58ba",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772396203285@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:16:43.493347Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:16:43.493347Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:16:43.489745Z",
+      "updated_at": "2026-03-01T20:16:43.494415Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "b99859e4-b066-4ce9-a300-f58dc14b9cab",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772396130044@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:15:30.362734Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:15:30.362734Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:15:30.355727Z",
+      "updated_at": "2026-03-01T20:15:30.364058Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "1a6919db-c15c-4220-9e58-3d05278d565a",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772396094468@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:14:55.35409Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:14:55.35409Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:14:55.350959Z",
+      "updated_at": "2026-03-01T20:14:55.355756Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "4e0a6498-cf2f-4d92-930b-09251370552f",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772395988602@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:13:08.694439Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:13:08.694439Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:13:08.688515Z",
+      "updated_at": "2026-03-01T20:13:08.69548Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "2fdbbc93-2c1c-4a7c-98d3-f9be08b4721e",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772395952413@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:12:32.725549Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:12:32.725549Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:12:32.722306Z",
+      "updated_at": "2026-03-01T20:12:32.726785Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "034e3b97-ddeb-46d3-ad6c-e909d5bc8242",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "test_1772395880344@gmail.com",
+      "email_confirmed_at": "2026-03-01T20:11:20.50959Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:11:20.50959Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:11:20.504889Z",
+      "updated_at": "2026-03-01T20:11:20.510254Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "6369ebc1-252a-4b88-83aa-2c7140ad0050",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "almaekelund@icloud.com",
+      "email_confirmed_at": "2026-03-01T20:11:01.160071Z",
+      "phone": "",
+      "confirmed_at": "2026-03-01T20:11:01.160071Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email_verified": true
+      },
+      "identities": null,
+      "created_at": "2026-03-01T20:11:01.149048Z",
+      "updated_at": "2026-03-01T20:11:01.164415Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "19e1b474-4e82-42cf-9fa1-334ac490a3c1",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "mahdimousavi8909@gmail.com",
+      "email_confirmed_at": "2026-02-25T21:56:02.536325Z",
+      "phone": "",
+      "confirmation_sent_at": "2026-02-25T21:54:33.375923Z",
+      "confirmed_at": "2026-02-25T21:56:02.536325Z",
+      "last_sign_in_at": "2026-03-11T19:25:46.667455Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email",
+          "google"
+        ]
+      },
+      "user_metadata": {
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocIh_5OWBgyoedn5-i0WtKS-W_BeqlKgy4pII6Uueqvyfbj-W7YeJQ=s96-c",
+        "email": "mahdimousavi8909@gmail.com",
+        "email_verified": true,
+        "full_name": "Mahdi Mousavi",
+        "iss": "https://accounts.google.com",
+        "name": "Mahdi Mousavi",
+        "phone_verified": false,
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocIh_5OWBgyoedn5-i0WtKS-W_BeqlKgy4pII6Uueqvyfbj-W7YeJQ=s96-c",
+        "provider_id": "112245928976043806051",
+        "sub": "112245928976043806051"
+      },
+      "identities": null,
+      "created_at": "2026-02-25T21:54:33.316174Z",
+      "updated_at": "2026-03-11T19:25:46.709379Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "19004bee-0f33-48e5-818d-9137e3a3657e",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "madi1@test.se",
+      "phone": "",
+      "confirmation_sent_at": "2026-02-25T11:51:44.492425Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email": "madi1@test.se",
+        "email_verified": false,
+        "phone_verified": false,
+        "sub": "19004bee-0f33-48e5-818d-9137e3a3657e"
+      },
+      "identities": null,
+      "created_at": "2026-02-25T11:51:44.402615Z",
+      "updated_at": "2026-02-25T11:51:44.907423Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "231f4218-5efd-4bb8-8fe1-3385a287a4ab",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "ny_anvandare@test.se",
+      "phone": "",
+      "confirmation_sent_at": "2026-02-25T10:44:24.308735Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email": "ny_anvandare@test.se",
+        "email_verified": false,
+        "phone_verified": false,
+        "sub": "231f4218-5efd-4bb8-8fe1-3385a287a4ab"
+      },
+      "identities": null,
+      "created_at": "2026-02-24T07:33:08.689981Z",
+      "updated_at": "2026-02-25T10:44:24.596322Z",
+      "is_anonymous": false
+    },
+    {
+      "id": "eab7718e-1a65-48b5-af70-78cd8356329d",
+      "aud": "authenticated",
+      "role": "authenticated",
+      "email": "momo0033@student.hv.se",
+      "phone": "",
+      "confirmation_sent_at": "2026-02-16T14:19:18.237513Z",
+      "app_metadata": {
+        "provider": "email",
+        "providers": [
+          "email"
+        ]
+      },
+      "user_metadata": {
+        "email": "momo0033@student.hv.se",
+        "email_verified": false,
+        "phone_verified": false,
+        "sub": "eab7718e-1a65-48b5-af70-78cd8356329d"
+      },
+      "identities": null,
+      "created_at": "2026-02-16T14:19:18.178391Z",
+      "updated_at": "2026-02-16T14:19:19.157394Z",
+      "is_anonymous": false
+    }
+  ],
+  "error": null
+}

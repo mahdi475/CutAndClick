@@ -130,9 +130,9 @@ const StoreServicesPage: React.FC<StoreServicesPageProps> = ({ barber, onBack, o
         {(activeTab === 'All' || activeTab === 'Tjänster') && (
           <div className="mb-10 pl-7 md:pr-7">
             {/* Responsive Grid/Scroll */}
-            <div className="flex overflow-x-auto pb-4 no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 md:overflow-visible md:pr-0">
+            <div className="flex overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth overscroll-x-contain no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 md:overflow-visible md:pr-0">
               {MOCK_SERVICES.map(service => (
-                <div key={service.id} className="md:w-full">
+                <div key={service.id} className="md:w-full snap-center">
                   <StoreItemCard item={service} type="service" onClick={onItemClick} />
                 </div>
               ))}
@@ -151,9 +151,9 @@ const StoreServicesPage: React.FC<StoreServicesPageProps> = ({ barber, onBack, o
               </button>
             </div>
 
-            <div className="flex overflow-x-auto pb-4 no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 md:overflow-visible md:pr-0">
+            <div className="flex overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth overscroll-x-contain no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 md:overflow-visible md:pr-0">
               {MOCK_PRODUCTS.map(product => (
-                <div key={product.id} className="md:w-full">
+                <div key={product.id} className="md:w-full snap-center">
                   <StoreItemCard item={product} type="product" onClick={onItemClick} />
                 </div>
               ))}

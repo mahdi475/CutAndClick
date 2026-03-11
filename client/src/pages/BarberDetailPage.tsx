@@ -331,6 +331,15 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
 
       {/* Tab Content */}
       <div className="mt-6 px-6 flex flex-col gap-4">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab + (loading ? '-loading' : '')}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col gap-4 w-full"
+          >
 
         {loading && (
           <div className="flex flex-col gap-3">
@@ -513,6 +522,8 @@ const BarberDetailPage: React.FC<BarberDetailPageProps> = ({
             )}
           </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Deco blob */}

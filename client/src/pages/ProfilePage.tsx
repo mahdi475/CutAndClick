@@ -3,6 +3,7 @@ import {
     Settings, CreditCard, Bell, User, LogOut, Edit2, ArrowLeft,
     ChevronRight, Save, Loader2, X, Eye, EyeOff, Check
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/common/ImageUpload';
 
@@ -135,6 +136,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
                                     currentImageUrl={user?.profile_pic_url}
                                     initials={initials}
                                     size="lg"
+                                    shape="square"
                                     fixedFileName="profile_pic.png"
                                 />
                                 <p className="text-[12px] text-gray-400 mt-2 font-inter text-black">Klicka för att byta profilbild</p>
@@ -230,6 +232,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
                         currentImageUrl={user?.profile_pic_url}
                         initials={initials}
                         size="md"
+                        shape="square"
                         fixedFileName="profile_pic.png"
                     />
                 </div>
@@ -270,11 +273,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
             </div>
 
             {/* Sign out */}
-            <button onClick={onSignOut}
-                className="w-full h-[58px] bg-red-50 rounded-[20px] flex items-center justify-center gap-3 hover:bg-red-100 transition-colors active:scale-95">
+            <motion.button 
+                onClick={() => {
+                    if (window.navigator?.vibrate) window.navigator.vibrate(50);
+                    onSignOut();
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                className="w-full h-[58px] bg-red-50 rounded-[20px] flex items-center justify-center gap-3 hover:bg-red-100 transition-colors cursor-pointer outline-none"
+            >
                 <LogOut size={22} className="text-red-500" />
                 <span className="text-red-500 font-inter font-bold text-[18px]">SIGN OUT</span>
-            </button>
+            </motion.button>
         </div>
     );
 };

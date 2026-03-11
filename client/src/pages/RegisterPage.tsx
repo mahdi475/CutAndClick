@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { User, Scissors, ChevronRight, ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth, AuthUser } from '../context/AuthContext';
 import AddressAutocomplete from '../components/common/AddressAutocomplete';
 import PhoneInput from '../components/common/PhoneInput';
 import WebsiteInput from '../components/common/WebsiteInput';
+import RegisterImagePicker from '../components/common/RegisterImagePicker';
+import LocationPickerMap from '../components/common/LocationPickerMap';
 import { supabase } from '../supabase';
 
 type Role = 'customer' | 'barber';
@@ -29,6 +32,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
     const [password, setPassword] = useState('');
     const [location, setLocation] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // Barber-specifika fält
     const [salonName, setSalonName] = useState('');
@@ -108,11 +113,41 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
 
             // Spara session och user i AuthContext
             if (data.session?.access_token) {
+                // Ensure we use the new session to upload profile pic
+                await supabase.auth.setSession({
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token,
+                });
+
+                let uploadedPicUrl = '';
+                if (profilePicFile) {
+                    try {
+                        const fileExt = profilePicFile.name.split('.').pop();
+                        const fileName = `${data.user?.id || Date.now()}/profile.${fileExt}`;
+                        const { error: uploadError } = await supabase.storage
+                            .from('avatars')
+                            .upload(fileName, profilePicFile, { upsert: true });
+                        
+                        if (!uploadError) {
+                            const { data: { publicUrl } } = supabase.storage
+                                .from('avatars')
+                                .getPublicUrl(fileName);
+                            uploadedPicUrl = publicUrl;
+                            
+                            // Update db with the pic URL
+                            await supabase.from('users').update({ profile_pic_url: uploadedPicUrl }).eq('id', data.user.id);
+                        }
+                    } catch (e) {
+                         console.error('Kunde inte ladda upp profilbild:', e);
+                    }
+                }
+
                 const userData: Omit<AuthUser, 'token'> = {
-                    id: data.session.user?.id || '',
+                    id: data.user?.id || '',
                     username,
                     role: (data.role as 'customer' | 'barber') || role,
                     location: role === 'customer' ? location : city,
+                    profile_pic_url: uploadedPicUrl,
                     // Barber-specifika fält (platta på user-objektet)
                     ...(role === 'barber' && {
                         salon_name: salonName,
@@ -179,9 +214,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
 
                     <div className="flex flex-col gap-4">
                         {/* Kund-kort */}
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                             onClick={() => { setRole('customer'); setStep(2); }}
-                            className="w-full flex items-center gap-5 px-6 py-5 rounded-[18px] border-2 border-black/10 hover:border-black hover:shadow-md transition-all active:scale-[0.98] bg-white group"
+                            className="w-full flex items-center gap-5 px-6 py-5 rounded-[18px] border-2 border-black/10 hover:border-black hover:shadow-md transition-shadow bg-white group text-left"
                         >
                             <div className="w-12 h-12 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white transition-all flex items-center justify-center shrink-0">
                                 <User size={22} className="text-black group-hover:text-white transition-colors" />
@@ -191,12 +227,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                 <p className="font-inter text-sm text-black/40">Boka tid hos dina favoritbarberer</p>
                             </div>
                             <ChevronRight size={18} className="text-black/30 ml-auto group-hover:text-black transition-colors" />
-                        </button>
+                        </motion.button>
 
                         {/* Barber-kort */}
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                             onClick={() => { setRole('barber'); setStep(2); }}
-                            className="w-full flex items-center gap-5 px-6 py-5 rounded-[18px] border-2 border-black/10 hover:border-black hover:shadow-md transition-all active:scale-[0.98] bg-white group"
+                            className="w-full flex items-center gap-5 px-6 py-5 rounded-[18px] border-2 border-black/10 hover:border-black hover:shadow-md transition-shadow bg-white group text-left"
                         >
                             <div className="w-12 h-12 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white transition-all flex items-center justify-center shrink-0">
                                 <Scissors size={22} className="text-black group-hover:text-white transition-colors" />
@@ -206,7 +243,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                 <p className="font-inter text-sm text-black/40">Registrera din salong och hantera bokningar</p>
                             </div>
                             <ChevronRight size={18} className="text-black/30 ml-auto group-hover:text-black transition-colors" />
-                        </button>
+                        </motion.button>
                     </div>
                 </div>
             </div>
@@ -258,6 +295,15 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
 
                 {/* Form */}
                 <div className="flex flex-col gap-4 mb-6">
+                    {/* Profilbild */}
+                    <RegisterImagePicker 
+                        onImageSelect={(file) => {
+                            setProfilePicFile(file);
+                            setPreviewUrl(URL.createObjectURL(file));
+                        }} 
+                        previewUrl={previewUrl}
+                    />
+
                     {/* Namn */}
                     <div>
                         <input
@@ -373,15 +419,35 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                     hasError={!!errors.website}
                                 />
                             </div>
+
+                            {/* Map Picker Barber */}
+                            <LocationPickerMap 
+                                initialAddress={salonAddress}
+                                onAddressSelected={(addr, c) => {
+                                    setSalonAddress(addr);
+                                    if(c) setCity(c);
+                                }}
+                            />
                         </>
+                    )}
+
+                    {/* Kund Map Picker (optional, men om location krävs kan vi visa den) */}
+                    {role === 'customer' && location && location.length > 2 && (
+                         <LocationPickerMap 
+                            initialAddress={location}
+                            onAddressSelected={(_addr, c) => {
+                                if(c) setLocation(c);
+                            }}
+                        />
                     )}
                 </div>
 
                 {/* Submit-knapp */}
-                <button
+                <motion.button
+                    whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full h-[54px] bg-[#363636]/90 hover:bg-black rounded-[15px] flex items-center justify-center gap-3 transition-colors active:scale-[0.98] shadow-md disabled:opacity-60 disabled:cursor-not-allowed mb-6"
+                    className="w-full h-[54px] bg-[#363636]/90 hover:bg-black rounded-[15px] flex items-center justify-center gap-3 transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed mb-6"
                 >
                     {loading ? (
                         <Loader2 size={20} className="text-white animate-spin" />
@@ -390,7 +456,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                             {role === 'customer' ? 'Skapa konto' : 'Registrera din salong'}
                         </span>
                     )}
-                </button>
+                </motion.button>
 
                 {/* Social Login (endast kunder) */}
                 {role === 'customer' && (
@@ -403,10 +469,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                         </div>
 
                         {/* Google */}
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                             onClick={() => handleOAuth('google')}
                             disabled={loading}
-                            className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group disabled:opacity-60"
+                            className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm hover:bg-gray-200 overflow-hidden group disabled:opacity-60"
                         >
                             <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                                 <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -417,13 +484,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                 </svg>
                             </div>
                             <span className="flex-1 text-center text-black font-poppins font-medium text-[16px]">Sign up with Google</span>
-                        </button>
+                        </motion.button>
 
                         {/* Apple */}
-                        <button
+                        <motion.button
+                            whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                             onClick={() => handleOAuth('apple')}
                             disabled={loading}
-                            className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group disabled:opacity-60"
+                            className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm hover:bg-zinc-800 overflow-hidden group disabled:opacity-60"
                         >
                             <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                                 <svg viewBox="0 0 384 512" className="w-6 h-6 fill-black">
@@ -431,7 +499,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                 </svg>
                             </div>
                             <span className="flex-1 text-center text-white font-poppins font-medium text-[16px]">Sign up with Apple</span>
-                        </button>
+                        </motion.button>
                     </div>
                 )}
 

@@ -65,6 +65,15 @@ async function registerUser(req, res) {
 
         if (dbError) {
             console.error("USERS TABLE INSERT ERROR:", dbError.message);
+            if (dbError.code === '23505') {
+                if (dbError.message.includes('users_username_key')) {
+                    return res.status(400).json({ error: 'Detta användarnamn är redan upptaget.' });
+                }
+                if (dbError.message.includes('users_pkey') || dbError.message.includes('users_id_key')) {
+                    return res.status(400).json({ error: 'Ett konto med denna e-post finns redan. Vänligen logga in istället, eller verifiera din e-post.' });
+                }
+                return res.status(400).json({ error: 'Ett konto med dessa uppgifter finns redan.' });
+            }
             return res.status(400).json({ error: dbError.message });
         }
 
@@ -113,7 +122,12 @@ async function loginUser(req, res) {
         });
 
         const { data, error } = await tempSupabase.auth.signInWithPassword({ email, password });
-        if (error) return res.status(401).json({ error: 'Fel mejl eller lösenord' });
+        if (error) {
+            if (error.message.toLowerCase().includes('confirm')) {
+                return res.status(401).json({ error: 'Vänligen bekräfta din e-postadress i mejlet som skickades till dig innan du försöker logga in igen.' });
+            }
+            return res.status(401).json({ error: 'Fel mejl eller lösenord' });
+        }
 
         const { data: userData, error: userError } = await supabase
             .from('users')

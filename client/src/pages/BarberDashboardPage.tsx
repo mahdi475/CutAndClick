@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Home, Scissors, ShoppingBag, Calendar, User, Settings } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import BarberHomePage from './barber/BarberHomePage';
 import BarberServicesPage from './barber/BarberServicesPage';
@@ -42,8 +43,19 @@ const BarberDashboardPage: React.FC<BarberDashboardProps> = ({ onSignOut }) => {
     return (
         <div className="flex flex-col h-screen bg-[#F8F8F8] overflow-hidden">
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-                {renderTab()}
+            <div className="flex-1 overflow-y-auto relative bg-[#F8F8F8]">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: -5 }}
+                        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                        className="h-full w-full"
+                    >
+                        {renderTab()}
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
             {/* Bottom Nav */}
@@ -55,7 +67,7 @@ const BarberDashboardPage: React.FC<BarberDashboardProps> = ({ onSignOut }) => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all ${active ? 'text-black' : 'text-gray-400 hover:text-gray-600'
+                            className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-all relative ${active ? 'text-black' : 'text-gray-400 hover:text-gray-600'
                                 }`}
                         >
                             <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-black/5' : ''}`}>
@@ -64,6 +76,7 @@ const BarberDashboardPage: React.FC<BarberDashboardProps> = ({ onSignOut }) => {
                             <span className={`text-[10px] font-inter font-medium tracking-wide ${active ? 'text-black' : 'text-gray-400'}`}>
                                 {tab.label}
                             </span>
+                            {active && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute bottom-1.5 w-1 h-1 bg-black rounded-full" />}
                         </button>
                     );
                 })}
