@@ -62,15 +62,15 @@ async function getAvailableSlots(req, res) {
         // Generera alla möjliga slots baserat på tjänstens varaktighet
         const allSlots = generateSlots(hours.open_time, hours.close_time, durationMinutes);
 
-        // Hämta alla bokade tider för det datumet
-        const { data: bookings } = await supabase
+        // Hämta alla bokade tider för det datumet, för _alla_ tjänster den här frisören har
+        const { data: bookings, error: bErr } = await supabase
             .from('bookings')
-            .select('booking_time_slot')
-            .eq('haircut_id', haircutId)
+            .select('booking_time, haircut_posts!inner(user_id)')
+            .eq('haircut_posts.user_id', haircut.user_id)
             .eq('booking_date', date)
             .neq('status', 'cancelled');
 
-        const bookedTimes = new Set((bookings || []).map(b => (b.booking_time_slot || '').slice(0, 5)));
+        const bookedTimes = new Set((bookings || []).map(b => (b.booking_time || '').slice(0, 5)));
 
         const available = allSlots.filter(slot => !bookedTimes.has(slot));
 
@@ -150,8 +150,11 @@ async function createBooking(req, res) {
                 }
 
                 // E-post till kund
+                console.log("[Booking] Checking authUser for email:", authUser);
                 if (authUser?.user?.email) {
+                    console.log("[Booking] Found email:", authUser.user.email);
                     const { data: customerProfile } = await supabase.from('users').select('username').eq('id', customer_id).single();
+                    console.log("[Booking] Sending confirmation...");
                     sendBookingConfirmation({
                         to: authUser.user.email,
                         customerName: customerProfile?.username || 'Kund',
@@ -160,6 +163,8 @@ async function createBooking(req, res) {
                         time: booking_time,
                         service: serviceTitle,
                     });
+                } else {
+                    console.log("[Booking] No email found for user_id:", customer_id);
                 }
             } catch (notifErr) {
                 console.error('[Post-booking] Notifikationsfel (ej kritiskt):', notifErr.message);

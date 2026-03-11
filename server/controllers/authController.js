@@ -251,4 +251,67 @@ async function updateProfile(req, res) {
     }
 }
 
-module.exports = { registerUser, loginUser, logoutUser, getProfile, updateProfile };
+// ─────────────────────────────────────────────
+// OAUTH SYNC — Skapar konto i DB om det saknas
+// ─────────────────────────────────────────────
+async function oauthSync(req, res) {
+    const authUser = req.user; // Kommer från protect-middlewaren (getUser)
+    const user_id = authUser.id;
+
+    try {
+        // Kontrollera om användaren redan finns i databasen
+        const { data: user, error: fetchErr } = await supabase
+            .from('users')
+            .select('id, username, location, role, profile_pic_url')
+            .eq('id', user_id)
+            .single();
+
+        if (user && !fetchErr) {
+            return res.status(200).json({
+                message: 'Konto fanns redan',
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    role: user.role,
+                    profile_pic_url: user.profile_pic_url,
+                    location: user.location
+                }
+            });
+        }
+
+        // Konto fanns inte — hämta data från authUser
+        const meta = authUser.user_metadata || {};
+        const username = meta.full_name || meta.name || authUser.email?.split('@')[0] || 'Kund';
+        const avatarUrl = meta.avatar_url || meta.picture || '';
+
+        // Skapa den nya användaren
+        const { error: insertErr } = await supabase.from('users').insert([{
+            id: user_id,
+            username: username,
+            role: 'customer', // OAuth blir by default customers
+            profile_pic_url: avatarUrl,
+            location: ''
+        }]);
+
+        if (insertErr) {
+            console.error('oauthSync insert fel:', insertErr.message);
+            return res.status(500).json({ error: 'Kunde inte skapa användare' });
+        }
+
+        res.status(201).json({
+            message: 'Konto skapades från OAuth',
+            user: {
+                id: user_id,
+                username: username,
+                role: 'customer',
+                profile_pic_url: avatarUrl,
+                location: ''
+            }
+        });
+    } catch (err) {
+        console.error('oauthSync serverfel:', err);
+        res.status(500).json({ error: 'Serverfel vid OAuth-synk' });
+    }
+}
+
+module.exports = { registerUser, loginUser, logoutUser, getProfile, updateProfile, oauthSync };

@@ -218,6 +218,11 @@ const AppInner: React.FC = () => {
           onLogin={handleLoginSuccess}
           onSignUp={() => setScreen('register')}
           onShowToast={showToast}
+          onGuest={() => {
+            setGuest();
+            setScreen('app');
+            showToast('Välkommen som gäst');
+          }}
         />
         <Toast message={toastMessage} visible={toastVisible} onClose={hideToast} />
       </>

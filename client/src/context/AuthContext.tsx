@@ -51,24 +51,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 const parsed = JSON.parse(savedUser);
                 setUser(parsed);
-                // TUNN BRAINROT DEBUGGING: Berätta för Supabase vem vi är
-                if (parsed.token) {
-                    console.log('--- SVENSK BRAINROT DEBUG ---');
-                    console.log('Jalla, vi har en token! Sätter session för Supabase nu...');
-                    supabase.auth.setSession({
-                        access_token: parsed.token,
-                        refresh_token: parsed.token, // Vi använder samma för enkelhet i denna flow
-                    }).then(({ error }) => {
-                        if (error) console.error('Aina stoppade oss: Fel vid setSession:', error.message);
-                        else console.log('Brrrr! Supabase session är LIVE. Nu kan du ladda upp bilder, brush.');
-                    });
-                }
             } catch {
                 localStorage.removeItem('cut_click_user');
             }
         } else if (localStorage.getItem('cut_click_guest') === 'true') {
             setUser({ id: '', username: 'Gäst', role: 'guest', token: null });
         }
+
+        // Lyssna på OAuth-inloggningar från Supabase
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session?.access_token) {
+                // Kolla om vi redan har användaren (för att slippa onödiga anrop)
+                const stored = localStorage.getItem('cut_click_user');
+                if (stored) {
+                    try {
+                        const parsed = JSON.parse(stored);
+                        if (parsed.token === session.access_token) return;
+                    } catch { }
+                }
+
+                // Synka med backenden!
+                try {
+                    const res = await fetch('/api/auth/oauth-sync', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        }
+                    });
+                    const d = await res.json();
+                    if (res.ok && d.user) {
+                        login(session.access_token, d.user);
+                    }
+                } catch (err) {
+                    console.error('Kunde inte synka OAuth-login:', err);
+                }
+            } else if (event === 'SIGNED_OUT') {
+                if (!localStorage.getItem('cut_click_guest')) {
+                    setUser(null);
+                    localStorage.removeItem('cut_click_user');
+                }
+            }
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
     }, []);
 
     const login = (token: string, userData: Omit<AuthUser, 'token'>) => {
@@ -76,13 +104,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(fullUser);
         localStorage.setItem('cut_click_user', JSON.stringify(fullUser));
         localStorage.removeItem('cut_click_guest');
-
-        // BRAINROT: Sätt session direkt vid login också!
-        console.log('Legendary login! Sätter Supabase session för', userData.username);
-        supabase.auth.setSession({
-            access_token: token,
-            refresh_token: token,
-        });
     };
 
     const updateUser = (data: Partial<AuthUser>) => {

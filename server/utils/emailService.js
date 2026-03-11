@@ -2,19 +2,33 @@
 // E-postnotifikationer via Resend (installers: npm install resend)
 // Lägg till RESEND_API_KEY i .env
 
-let resend;
-try {
-    const { Resend } = require('resend');
-    resend = new Resend(process.env.RESEND_API_KEY);
-} catch {
-    // Resend ej installerat — email skickas inte (fail silently)
-    resend = null;
+let resendInstance = null;
+
+function getResend() {
+    if (resendInstance) return resendInstance;
+
+    // Försök ladda dotenv ifall det inte är laddat än
+    require('dotenv').config();
+
+    try {
+        const { Resend } = require('resend');
+        if (process.env.RESEND_API_KEY) {
+            resendInstance = new Resend(process.env.RESEND_API_KEY);
+        }
+    } catch (err) {
+        console.error('[Email] Failed to load Resend module:', err.message);
+    }
+    return resendInstance;
 }
 
-const FROM = 'Cut & Click <noreply@cutandclick.se>';
+// OBS! Om du inte lagt in en egen domän i Resend (t.ex. cutandclick.se),
+// måste du skicka från onboarding@resend.dev under utveckling.
+const FROM = 'Cut & Click <onboarding@resend.dev>';
 
 async function sendBookingConfirmation({ to, customerName, salonName, date, time, service }) {
-    if (!resend || !process.env.RESEND_API_KEY) {
+    const resend = getResend();
+
+    if (!resend) {
         console.log('[Email] Resend ej konfigurerat — hoppar över e-post');
         return;
     }
@@ -57,7 +71,8 @@ async function sendBookingConfirmation({ to, customerName, salonName, date, time
 }
 
 async function sendBookingReminder({ to, customerName, salonName, date, time }) {
-    if (!resend || !process.env.RESEND_API_KEY) return;
+    const resend = getResend();
+    if (!resend) return;
     try {
         await resend.emails.send({
             from: FROM,

@@ -18,4 +18,7 @@ router.get('/profile', protect, authController.getProfile);
 // PUT /api/auth/profile — uppdaterar profil
 router.put('/profile', protect, authController.updateProfile);
 
+// POST /api/auth/oauth-sync — synkar Google/Apple-inloggning
+router.post('/oauth-sync', protect, authController.oauthSync);
+
 module.exports = router;

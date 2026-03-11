@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { Lock, LogIn, Loader2 } from 'lucide-react';
 import { useAuth, AuthUser } from '../context/AuthContext';
+import { supabase } from '../supabase';
 
 interface LoginPageProps {
     onLogin: (username: string, role: 'customer' | 'barber') => void;
     onSignUp: () => void;
     onShowToast: (msg: string) => void;
+    onGuest?: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, onGuest }) => {
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -55,6 +57,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
             }
         } catch (err) {
             setError('Kunde inte nå servern');
+            setLoading(false);
+        }
+    };
+
+    const handleOAuth = async (provider: 'google' | 'apple') => {
+        setLoading(true);
+        setError('');
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: window.location.origin,
+                },
+            });
+            if (error) {
+                setError(error.message);
+                setLoading(false);
+            }
+        } catch (err) {
+            setError('Något gick fel med inloggningen');
             setLoading(false);
         }
     };
@@ -143,8 +165,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
                 <div className="flex flex-col gap-4 mb-8">
                     {/* Google */}
                     <button
-                        onClick={() => onShowToast('Google login kommer snart')}
-                        className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group"
+                        onClick={() => handleOAuth('google')}
+                        disabled={loading}
+                        className="w-full h-[64px] bg-[#EAEAEA] rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-gray-200 overflow-hidden group disabled:opacity-60"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 24 24" className="w-6 h-6">
@@ -159,8 +182,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
 
                     {/* Apple */}
                     <button
-                        onClick={() => onShowToast('Apple login kommer snart')}
-                        className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group"
+                        onClick={() => handleOAuth('apple')}
+                        disabled={loading}
+                        className="w-full h-[64px] bg-black rounded-none flex items-center shadow-sm active:scale-[0.98] transition-all hover:bg-zinc-800 overflow-hidden group disabled:opacity-60"
                     >
                         <div className="w-[64px] h-[64px] bg-white flex items-center justify-center shrink-0 group-hover:bg-opacity-90 transition-colors">
                             <svg viewBox="0 0 384 512" className="w-6 h-6 fill-black">
@@ -172,10 +196,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast })
                 </div>
 
                 {/* --- Footer Link --- */}
-                <div className="flex justify-center text-[14px] font-poppins">
-                    <span className="text-black font-normal">Don't have an account? </span>
-                    <span className="w-1"> </span>
-                    <button onClick={onSignUp} className="text-black font-bold hover:underline">Sign Up</button>
+                <div className="flex flex-col items-center gap-3 text-[14px] font-poppins">
+                    <div className="flex">
+                        <span className="text-black font-normal">Don't have an account? </span>
+                        <span className="w-1"> </span>
+                        <button onClick={onSignUp} className="text-black font-bold hover:underline">Sign Up</button>
+                    </div>
+                    {onGuest && (
+                        <button
+                            onClick={onGuest}
+                            className="text-black/40 font-inter text-[13px] hover:text-black/70 transition-colors flex items-center gap-1 group"
+                        >
+                            Logga in senare
+                            <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                        </button>
+                    )}
                 </div>
 
             </div>

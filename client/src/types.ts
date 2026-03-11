@@ -10,6 +10,7 @@ export interface BarberShop {
   isPopular: boolean;
   bio?: string;
   phone?: string;
+  website?: string;
   total_reviews?: number;
   barber_name?: string;
   created_at?: string;

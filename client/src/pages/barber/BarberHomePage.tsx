@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, TrendingUp, Users, Star, Calendar, LogOut } from 'lucide-react';
+import { Plus, TrendingUp, Users, Star, Calendar, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationsPanel from '../../components/NotificationsPanel';
 
 interface BarberHomePageProps {
     user: any;
@@ -39,6 +40,8 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
     const [todayBookings, setTodayBookings] = useState<TodayBooking[]>([]);
     const [stats, setStats] = useState<DashStats>({ today: 0, week: 0, total: 0 });
     const [loading, setLoading] = useState(true);
+    const [showNotifs, setShowNotifs] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const { user: authUser, logout } = useAuth();
     const token = user?.token;
 
@@ -61,6 +64,18 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
             .catch(() => setLoading(false));
     }, [token]);
 
+    useEffect(() => {
+        if (!token) return;
+        const fetchUnread = () =>
+            fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.json())
+                .then(d => { if (Array.isArray(d)) setUnreadCount(d.filter((n: any) => !n.is_read).length); })
+                .catch(() => { });
+        fetchUnread();
+        const interval = setInterval(fetchUnread, 30000);
+        return () => clearInterval(interval);
+    }, [token]);
+
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'God morgon' : hour < 17 ? 'God dag' : 'God kväll';
     const displayName = user?.username || 'Barber';
@@ -74,13 +89,27 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
                     <h1 className="font-inter font-bold text-[26px] text-black">{greeting}, {displayName}!</h1>
                     <p className="font-inter text-[15px] text-gray-400 mt-1">Här är din översikt</p>
                 </div>
-                <button
-                    onClick={() => { logout(); onSignOut(); }}
-                    className="p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors"
-                    title="Logga ut"
-                >
-                    <LogOut size={20} />
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => { setShowNotifs(true); setUnreadCount(0); }}
+                        className="relative p-2 bg-gray-50 text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                        title="Notifikationer"
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && (
+                            <div className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] bg-red-500 rounded-full flex items-center justify-center border border-white">
+                                <span className="text-white font-inter font-bold text-[9px] px-1">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                            </div>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => { logout(); onSignOut(); }}
+                        className="p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors"
+                        title="Logga ut"
+                    >
+                        <LogOut size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -131,6 +160,14 @@ const BarberHomePage: React.FC<BarberHomePageProps> = ({ user, onAddService, onS
                 <Plus size={18} className="text-white" />
                 <span className="font-inter font-semibold text-white text-[16px]">Lägg till ny tjänst</span>
             </button>
+
+            {/* Notifications panel */}
+            {showNotifs && (
+                <NotificationsPanel
+                    token={token}
+                    onClose={() => setShowNotifs(false)}
+                />
+            )}
         </div>
     );
 };
