@@ -1,3 +1,4 @@
+// detaljsida för en barber — info, tjänster, produkter, öppettider
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Heart, MoreHorizontal, Globe, MessageCircle,

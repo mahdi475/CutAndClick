@@ -1,3 +1,4 @@
+// hem-vy för barber — stats och senaste bokningar
 import React, { useEffect, useState } from 'react';
 import { Plus, TrendingUp, Users, Star, Calendar, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

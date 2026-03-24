@@ -1,3 +1,4 @@
+// profil — stats, bildupload, inställningar
 import React, { useState, useEffect } from 'react';
 import {
     Settings, CreditCard, Bell, User, LogOut, Edit2, ArrowLeft,
@@ -24,25 +25,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
     const [section, setSection] = useState<Section>('main');
     const [bookingCount, setBookingCount] = useState<number>(0);
 
-    // Personal info form
+    // personlig info
     const [username, setUsername] = useState(user?.username || '');
     const [location, setLocation] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
 
-    // Notifications (localStorage)
+    // notiser
     const [notifs, setNotifs] = useState<NotifPrefs>(() => {
         try { return JSON.parse(localStorage.getItem('cc_notifs') || '{"booking":true,"newService":false,"promotions":false}'); }
         catch { return { booking: true, newService: false, promotions: false }; }
     });
 
-    // Password change
+    // byt lösen
     const [newPw, setNewPw] = useState('');
     const [showPw, setShowPw] = useState(false);
     const [pwSaving, setPwSaving] = useState(false);
     const [pwMsg, setPwMsg] = useState('');
 
-    // Fetch booking count
+    // hämta antal bokningar
     useEffect(() => {
         if (!token) return;
         fetch('/api/bookings/my', { headers }).then(r => r.json())
@@ -111,7 +112,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
     const initials = displayName.slice(0, 2).toUpperCase();
     const points = bookingCount * 12;
 
-    // ── Back from sub-section ───────────────────
+    // tillbaka
     if (section !== 'main') {
         return (
             <div className="flex flex-col min-h-full bg-white pb-24 text-black">
@@ -212,7 +213,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onSignOut }) => {
         );
     }
 
-    // ── Main profile view ───────────────────────
+    // profil-vy
     return (
         <div className="flex flex-col min-h-full bg-white relative pb-24 px-6 pt-10 text-black">
 

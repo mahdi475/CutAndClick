@@ -1,3 +1,4 @@
+// startar servern, kollar db-connection
 const app = require('./app');
 const supabase = require('./config/db.js');
 
@@ -17,14 +18,14 @@ async function verifyDb() {
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 verifyDb();
 
-// Vi hämtar dörrvakten (protect)
+// hämtar dörrvakten bro
 const { protect } = require('./middleware/authMiddleware');
 
-// Vi skapar en test-väg som bara inloggade får se
+// test-route, ba inloggade slipper in
 app.get('/api/test-hidden', protect, (req, res) => {
-    // Om vi hamnar här betyder det att protect-funktionen körde "next()"
+    // om du e här så släppte protect dig, safe
     res.json({
         message: 'Du är inloggad och dörrvakten släppte in dig!',
-        din_info: req.user // Här ser du din info från Supabase
+        din_info: req.user
     });
 });

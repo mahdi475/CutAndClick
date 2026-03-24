@@ -1,3 +1,4 @@
+// slide-in notis-panel
 import React, { useEffect, useState, useCallback } from 'react';
 import { X, Bell, Calendar, Star, CheckCheck, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';

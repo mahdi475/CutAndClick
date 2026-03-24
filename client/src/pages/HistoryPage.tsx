@@ -1,3 +1,4 @@
+// bokningshistorik — kommande vs gammalt
 import React, { useState, useEffect, useRef } from 'react';
 import { MoreHorizontal, Clock, ArrowLeft, Loader2, MapPin, Calendar, X, Star, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';

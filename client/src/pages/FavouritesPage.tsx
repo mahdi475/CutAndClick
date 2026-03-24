@@ -1,3 +1,4 @@
+// sparade favoriter med swipe-to-remove
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MapPin, Star, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -53,7 +54,7 @@ const FavouritesPage: React.FC<FavouritesPageProps> = ({ onBack, onBarberClick, 
     if (sortBy === 'name') return a.salon_name.localeCompare(b.salon_name);
     if (sortBy === 'city') return a.city.localeCompare(b.city);
     return 0; // 'newest' is default from API usually, but we don't have created_at here yet. 
-    // If we wanted real 'newest' sorting, we'd need created_at in the Favourite interface.
+    
   });
 
   return (

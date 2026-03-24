@@ -1,9 +1,11 @@
+// supabase-klient med admin-access
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-// Använd service_role key på backend om den finns och inte är en placeholder
+// kör service_role key om den finns o inte e placeholder yani
 const supabaseKey = (serviceKey && serviceKey !== 'YOUR_SERVICE_ROLE_KEY_HERE')
     ? serviceKey
     : process.env.SUPABASE_KEY;

@@ -1,3 +1,4 @@
+// barber-inställningar — profil och salong-info
 import React, { useState, useEffect } from 'react';
 import { Save, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

@@ -1,3 +1,4 @@
+// splash/welcome — första sidan man ser
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
@@ -95,7 +96,7 @@ const ContentGroup = ({ onRegister, onFinish }: any) => {
 
 const StartupPage: React.FC<StartupPageProps> = ({ onFinish, onRegister }) => {
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col lg:flex-row overflow-x-hidden relative">
+    <div className="w-full min-h-[100dvh] bg-white flex flex-col lg:flex-row overflow-x-hidden relative">
 
       {/* --- MOBILE / TABLET VIEW (< 1024px) --- */}
       {/* Keeps the EXACT Figma mobile dimensions in relative scaling */}
@@ -115,7 +116,7 @@ const StartupPage: React.FC<StartupPageProps> = ({ onFinish, onRegister }) => {
 
       {/* --- DESKTOP VIEW (>= 1024px) --- */}
       {/* Expands elegantly to a split view that uses the exact design theme */}
-      <div className="hidden lg:flex w-full h-screen">
+      <div className="hidden lg:flex w-full h-[100dvh]">
         {/* Left section - Images */}
         <div className="w-1/2 h-full bg-[#F8F8F8] flex items-center justify-center overflow-hidden">
           <div className="transform scale-[0.9] xl:scale-[1.0] transition-transform duration-500">

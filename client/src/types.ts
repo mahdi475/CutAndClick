@@ -1,3 +1,4 @@
+// typescript-interfaces för hela appen
 export interface BarberShop {
   id: string;
   name: string;

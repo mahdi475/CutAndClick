@@ -1,11 +1,9 @@
+// öppettider — visa och uppdatera
 const supabase = require('../config/db');
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-// ----------------------------------------
-// GET /api/opening-hours/:userId
-// Publik — gäster kan se öppettider
-// ----------------------------------------
+// hämta öppettider, publikt
 async function getOpeningHours(req, res) {
     const { userId } = req.params;
 
@@ -18,7 +16,7 @@ async function getOpeningHours(req, res) {
 
         if (error) return res.status(400).json({ error: error.message });
 
-        // Om inga öppettider finns ännu — returnera default-struktur (stängd)
+        // inga tider än? skickar default (stängt)
         if (!data || data.length === 0) {
             const defaultHours = DAYS.map(day => ({
                 day_of_week: day,
@@ -36,21 +34,17 @@ async function getOpeningHours(req, res) {
     }
 }
 
-// ----------------------------------------
-// PUT /api/opening-hours
-// Kräver inloggning + barber-roll
-// Body: Array<{ day_of_week, open_time, close_time, is_closed }>
-// ----------------------------------------
+// uppdatera öppettider, kräver inloggning + barber
 async function updateOpeningHours(req, res) {
     const user_id = req.user.id;
-    const hours = req.body; // förväntat: array
+    const hours = req.body; // array
 
-    // Validera att det är ett array
+    // kolla att det e en array
     if (!Array.isArray(hours)) {
         return res.status(400).json({ error: 'Body måste vara en array av öppettider' });
     }
 
-    // Validera varje dag
+    // validera varje dag
     for (const item of hours) {
         if (!DAYS.includes(item.day_of_week)) {
             return res.status(400).json({ error: `Ogiltig dag: ${item.day_of_week}` });
@@ -61,7 +55,7 @@ async function updateOpeningHours(req, res) {
     }
 
     try {
-        // Upsert — varje dag uppdateras eller skapas
+        // upsert, uppdaterar eller skapar per dag
         const upsertData = hours.map(item => ({
             user_id,
             day_of_week: item.day_of_week,

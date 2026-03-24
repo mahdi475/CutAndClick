@@ -1,6 +1,7 @@
+// favoriter — visa, lägga till, ta bort
 const supabase = require('../config/db');
 
-// GET /api/favourites — lista mina favoriter
+// hämta mina favoriter
 async function getFavourites(req, res) {
     const user_id = req.user.id;
     try {
@@ -39,7 +40,7 @@ async function getFavourites(req, res) {
     }
 }
 
-// POST /api/favourites — lägg till favorit
+// lägg till favorit
 async function addFavourite(req, res) {
     const user_id = req.user.id;
     const { barber_id } = req.body;
@@ -53,7 +54,7 @@ async function addFavourite(req, res) {
             .single();
 
         if (error) {
-            // 23505 = unique violation = redan favorit
+            // 23505 = redan i favs, lugn bro
             if (error.code === '23505') return res.status(200).json({ message: 'Redan i favoriter' });
             return res.status(400).json({ error: error.message });
         }
@@ -63,7 +64,7 @@ async function addFavourite(req, res) {
     }
 }
 
-// DELETE /api/favourites/:barberId — ta bort favorit
+// ta bort favorit
 async function removeFavourite(req, res) {
     const user_id = req.user.id;
     const barber_id = req.params.barberId;

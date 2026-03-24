@@ -1,3 +1,4 @@
+// favoritroutes
 const express = require('express');
 const router = express.Router();
 const { getFavourites, addFavourite, removeFavourite } = require('../controllers/favouriteController');

@@ -1,3 +1,4 @@
+// tvåstegs-registrering — rollval sen formulär
 import React, { useState } from 'react';
 import { User, Scissors, ChevronRight, ChevronLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -26,7 +27,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
     const [step, setStep] = useState<1 | 2>(1);
     const [role, setRole] = useState<Role>('customer');
 
-    // Gemensamma fält
+    // gemensamma fält
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -35,7 +36,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
     const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    // Barber-specifika fält
+    // barber-grejer
     const [salonName, setSalonName] = useState('');
     const [salonAddress, setSalonAddress] = useState('');
     const [city, setCity] = useState('');
@@ -111,9 +112,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                 return;
             }
 
-            // Spara session och user i AuthContext
+            // spara session i context
             if (data.session?.access_token) {
-                // Ensure we use the new session to upload profile pic
+                // använd nya sessionen för profilbild
                 await supabase.auth.setSession({
                     access_token: data.session.access_token,
                     refresh_token: data.session.refresh_token,
@@ -134,7 +135,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                                 .getPublicUrl(fileName);
                             uploadedPicUrl = publicUrl;
                             
-                            // Update db with the pic URL
+                            // uppdatera db med bild-url
                             await supabase.from('users').update({ profile_pic_url: uploadedPicUrl }).eq('id', data.user.id);
                         }
                     } catch (e) {
@@ -148,7 +149,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
                     role: (data.role as 'customer' | 'barber') || role,
                     location: role === 'customer' ? location : city,
                     profile_pic_url: uploadedPicUrl,
-                    // Barber-specifika fält (platta på user-objektet)
+                    // barber-grejer (platta på user-objektet)
                     ...(role === 'barber' && {
                         salon_name: salonName,
                         salon_address: salonAddress,
@@ -190,12 +191,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
     const inputClass = (field: string) =>
         `w-full bg-[#FCFCFC] rounded-[12px] border ${errors[field] ? 'border-red-400' : 'border-black/20'} px-4 py-3 font-inter text-[15px] text-black/80 placeholder:text-black/30 outline-none transition-colors focus:border-black`;
 
-    // ----------------------------------------
-    // Step 1: Rollval
-    // ----------------------------------------
+    // steg 1: rollval
     if (step === 1) {
         return (
-            <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
+            <div className="w-full min-h-[100dvh] bg-white flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
                 {/* Top blob */}
                 <div
                     className="absolute w-[441px] h-[431px] left-[-100px] md:left-0 -top-[134px] rotate-[21deg] origin-top-left rounded-[9999px] pointer-events-none z-0"
@@ -250,11 +249,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSuccess, onBack }) => {
         );
     }
 
-    // ----------------------------------------
-    // Step 2: Formulär
-    // ----------------------------------------
+    // steg 2: formulär
     return (
-        <div className="w-full min-h-screen bg-white flex flex-col items-center py-12 px-6 relative overflow-hidden">
+        <div className="w-full min-h-[100dvh] bg-white flex flex-col items-center py-12 px-6 relative overflow-hidden">
             {/* Top blob */}
             <div
                 className="absolute w-[441px] h-[431px] left-[-100px] md:left-0 -top-[134px] rotate-[21deg] origin-top-left rounded-[9999px] pointer-events-none z-0"

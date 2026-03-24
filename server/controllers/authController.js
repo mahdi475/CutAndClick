@@ -1,49 +1,46 @@
+// auth: register, login, logout, profil, oauth-sync
 const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/db');
 
-// ─────────────────────────────────────────────
-// REGISTRERING
-// ─────────────────────────────────────────────
+// registrering bror
 async function registerUser(req, res) {
     const { email, password, username, location, role, salon_name, salon_address, city, phone } = req.body;
 
     const validRole = role === 'barber' ? 'barber' : 'customer';
 
     try {
-        // Skapa en temporär klient för Auth så vi inte smutsar ner serverns admin-klient (db.js)
+        // temp klient så vi inte smutsar ner admin-klienten type shit
         const tempSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
             auth: { persistSession: false }
         });
 
-        // 1. Skapa Supabase Auth-konto
+        // 1. skapa supabase auth-konto
         let authData, authError;
         const signupRes = await tempSupabase.auth.signUp({
             email,
             password,
             options: {
-                data: { role: validRole } // Spara rollen i metadata för snabbare åtkomst i JWT
+                data: { role: validRole } // sparar rollen i metadata, snabbare sen yani
             }
         });
         authData = signupRes.data;
         authError = signupRes.error;
 
-        // Fallback: If we hit the email rate limit from testing too much, force creation via admin API
+        // fallback om rate limit smäller, kör admin api istället
         if (authError && authError.message.includes('rate limit')) {
             console.log("Rate limit hit during signUp, forcing creation via admin API...");
             const adminRes = await supabase.auth.admin.createUser({
                 email: email,
                 password: password,
-                email_confirm: true // auto-confirm since it's admin
+                email_confirm: true
             });
 
             if (adminRes.error) {
                 authError = adminRes.error;
             } else {
-                authData = { user: adminRes.data.user, session: null }; // Admin create gives no session
+                authData = { user: adminRes.data.user, session: null };
                 authError = null;
             }
-            // Note: Since admin.createUser doesn't return a session, they will have to log in manually 
-            // after registering if this fallback is used, but that's better than being completely blocked.
         }
 
         if (authError) {
@@ -54,7 +51,7 @@ async function registerUser(req, res) {
         console.log("DEBUG REGISTRATION AUTHDATA:", authData);
         const userId = authData.user.id;
 
-        // 2. Spara i users-tabellen
+        // 2. stoppa in i users-tabellen
         const userLocation = location || city || '';
         const { error: dbError } = await supabase.from('users').insert([{
             id: userId,
@@ -77,7 +74,7 @@ async function registerUser(req, res) {
             return res.status(400).json({ error: dbError.message });
         }
 
-        // 3. Om barber: spara i barber_profiles
+        // 3. om barber, spara i barber_profiles med
         if (validRole === 'barber') {
             if (!salon_name || !salon_address || !city) {
                 return res.status(400).json({
@@ -108,25 +105,23 @@ async function registerUser(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// INLOGGNING
-// ─────────────────────────────────────────────
-
+// inloggning mannen
 async function loginUser(req, res) {
     const { email, password } = req.body;
 
     try {
-        // Kör signInWithPassword på en HELT NY temporär klient så den globala admin-klienten (db.js) inte smittas av RLS!
+        // ny temp klient igen, vill inte störa admin-klienten ykwim
         const tempSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
             auth: { persistSession: false }
         });
 
         const { data, error } = await tempSupabase.auth.signInWithPassword({ email, password });
         if (error) {
+            console.error("SUPABASE LOGIN ERROR:", error);
             if (error.message.toLowerCase().includes('confirm')) {
                 return res.status(401).json({ error: 'Vänligen bekräfta din e-postadress i mejlet som skickades till dig innan du försöker logga in igen.' });
             }
-            return res.status(401).json({ error: 'Fel mejl eller lösenord' });
+            return res.status(401).json({ error: 'Fel mejl eller lösenord. DB-svar: ' + error.message });
         }
 
         const { data: userData, error: userError } = await supabase
@@ -140,7 +135,6 @@ async function loginUser(req, res) {
             return res.status(404).json({ error: 'Konto-profil saknas i databasen' });
         }
 
-        // Normalisera: säkerställ att username alltid finns
         const normalizedUser = {
             id: data.user.id,
             username: userData.username || email,
@@ -160,9 +154,7 @@ async function loginUser(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// UTLOGGNING
-// ─────────────────────────────────────────────
+// logga ut ba
 async function logoutUser(req, res) {
     try {
         const { error } = await supabase.auth.signOut();
@@ -174,9 +166,7 @@ async function logoutUser(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// PROFIL — GET
-// ─────────────────────────────────────────────
+// hämta profil
 async function getProfile(req, res) {
     const user_id = req.user.id;
 
@@ -189,7 +179,6 @@ async function getProfile(req, res) {
 
         if (error || !user) return res.status(404).json({ error: 'Profil hittades inte' });
 
-        // Normalisera username
         let profile = {
             id: user.id,
             username: user.username,
@@ -215,15 +204,13 @@ async function getProfile(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// PROFIL — UPDATE
-// ─────────────────────────────────────────────
+// uppdatera profil
 async function updateProfile(req, res) {
     const user_id = req.user.id;
     const { username, location, bio, salon_name, salon_address, city, phone, cover_image, profile_pic_url } = req.body;
 
     try {
-        // Build update object for 'users' table
+        // bygger update-objekt för users
         const userUpdate = {};
         if (username !== undefined) userUpdate.username = username;
         if (location !== undefined) userUpdate.location = location;
@@ -238,7 +225,7 @@ async function updateProfile(req, res) {
             if (updateError) return res.status(400).json({ error: updateError.message });
         }
 
-        // Check if we need to update 'barber_profiles'
+        // kolla om barber_profiles behöver uppdateras med
         const barberUpdate = {};
         if (salon_name !== undefined) barberUpdate.salon_name = salon_name;
         if (salon_address !== undefined) barberUpdate.salon_address = salon_address;
@@ -265,15 +252,13 @@ async function updateProfile(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// OAUTH SYNC — Skapar konto i DB om det saknas
-// ─────────────────────────────────────────────
+// oauth sync - skapar konto i db om det inte finns, fr fr
 async function oauthSync(req, res) {
-    const authUser = req.user; // Kommer från protect-middlewaren (getUser)
+    const authUser = req.user;
     const user_id = authUser.id;
 
     try {
-        // Kontrollera om användaren redan finns i databasen
+        // kolla om usern redan finns
         const { data: user, error: fetchErr } = await supabase
             .from('users')
             .select('id, username, location, role, profile_pic_url')
@@ -293,16 +278,15 @@ async function oauthSync(req, res) {
             });
         }
 
-        // Konto fanns inte — hämta data från authUser
+        // finns inte, hämta data från auth och skapa
         const meta = authUser.user_metadata || {};
         const username = meta.full_name || meta.name || authUser.email?.split('@')[0] || 'Kund';
         const avatarUrl = meta.avatar_url || meta.picture || '';
 
-        // Skapa den nya användaren
         const { error: insertErr } = await supabase.from('users').insert([{
             id: user_id,
             username: username,
-            role: 'customer', // OAuth blir by default customers
+            role: 'customer', // oauth = customer by default
             profile_pic_url: avatarUrl,
             location: ''
         }]);

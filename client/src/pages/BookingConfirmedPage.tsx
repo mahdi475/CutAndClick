@@ -1,3 +1,4 @@
+// bekräftelsesida efter bokning
 import React from 'react';
 import { Check, Calendar, Clock, Scissors } from 'lucide-react';
 import { Product, Service, BarberShop } from '../types';

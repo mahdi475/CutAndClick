@@ -1,3 +1,4 @@
+// liten popup-notis nere till höger
 import React, { useEffect, useState } from 'react';
 
 interface ToastProps {

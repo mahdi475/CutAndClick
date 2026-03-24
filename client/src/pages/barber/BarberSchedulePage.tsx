@@ -1,3 +1,4 @@
+// ställ in öppettider per dag
 import React, { useEffect, useState } from 'react';
 import { Save, Loader2, X } from 'lucide-react';
 

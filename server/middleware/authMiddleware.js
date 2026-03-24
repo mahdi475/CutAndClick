@@ -1,8 +1,7 @@
+// dörrvakter: protect, requireBarber, optionalProtect
 const supabase = require('../config/db');
 
-// ----------------------------------------
-// protect — kräver giltig inloggning
-// ----------------------------------------
+// dörrvakt, kräver giltig token bro
 async function protect(req, res, next) {
     const authHeader = req.headers.authorization;
 
@@ -22,13 +21,10 @@ async function protect(req, res, next) {
     next();
 }
 
-// ----------------------------------------
-// requireBarber — kräver att inloggad user är barber
-// Måste köras AFTER protect
-// ----------------------------------------
+// kräver barber-roll, körs efter protect
 async function requireBarber(req, res, next) {
     try {
-        // Vi kollar ALLTID databasen för att vara säkra, eftersom Supabase 'role' ofta är 'authenticated'
+        // kollar databasen, supabase role e oftast ba 'authenticated' ykwim
         const { data, error } = await supabase
             .from('users')
             .select('role')
@@ -58,9 +54,7 @@ async function requireBarber(req, res, next) {
     }
 }
 
-// ----------------------------------------
-// optionalProtect — fångar upp user om token finns, annars fortsätt
-// ----------------------------------------
+// optional, snor upp user om token finns men kraschar inte utan
 async function optionalProtect(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

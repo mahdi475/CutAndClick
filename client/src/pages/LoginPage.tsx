@@ -1,3 +1,4 @@
+// login med email/lösen + google/apple oauth
 import React, { useState } from 'react';
 import { Lock, LogIn, Loader2, ArrowLeft } from 'lucide-react';
 import { motion, Variants } from 'framer-motion';
@@ -89,7 +90,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignUp, onShowToast, o
     };
 
     return (
-        <div className="w-full min-h-screen relative bg-white overflow-hidden flex flex-col items-center justify-center py-10">
+        <div className="w-full min-h-[100dvh] relative bg-white overflow-hidden flex flex-col items-center justify-center py-10">
 
             {/* --- Top Gradient Blob --- */}
             <motion.div

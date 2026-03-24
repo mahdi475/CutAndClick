@@ -1,3 +1,4 @@
+// detaljvy för en tjänst/produkt
 import React, { useState } from 'react';
 import { ArrowLeft, Heart, Clock, MapPin, Star, Calendar, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -12,7 +13,7 @@ interface ProductDetailPageProps {
 const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ item, onBack, onBookNow }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
 
-    // Is it a Service (has description field) or a Product?
+    // service eller produkt?
     const isService = 'description' in item && Boolean((item as Service).description);
     const description = (item as Service).description || (item as Product).subtitle || '';
     const duration = (item as Service).duration_minutes;

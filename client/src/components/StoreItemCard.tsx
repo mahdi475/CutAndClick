@@ -1,3 +1,4 @@
+// produktkort med shimmer-effekt
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { motion } from 'framer-motion';

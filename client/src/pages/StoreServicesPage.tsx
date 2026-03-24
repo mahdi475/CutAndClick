@@ -1,3 +1,4 @@
+// alla tjänster/produkter för en barber
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { BarberShop, Service, Product } from '../types';

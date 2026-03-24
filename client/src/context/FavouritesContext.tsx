@@ -1,8 +1,9 @@
+// global favorit-state med optimistic updates
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 
 interface FavouritesContextType {
-    favorites: string[]; // Array of barber IDs
+    favorites: string[]; // barber ids
     toggleFavorite: (barberId: string) => Promise<boolean>;
     isFavorite: (barberId: string) => boolean;
     refreshFavorites: () => Promise<void>;
@@ -26,7 +27,7 @@ export const FavouritesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             });
             if (res.ok) {
                 const data = await res.json();
-                // Assumes API returns array of objects with barber_id
+                // api ger array med barber_id
                 setFavorites(data.map((fav: any) => fav.barber_id));
             }
         } catch (err) {
@@ -45,7 +46,7 @@ export const FavouritesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         const wasFavorite = isFavorite(barberId);
 
-        // Optimistic update
+        // optimistic update ba
         setFavorites(prev =>
             wasFavorite ? prev.filter(id => id !== barberId) : [...prev, barberId]
         );
@@ -67,7 +68,7 @@ export const FavouritesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             if (!res.ok) throw new Error('Failed to toggle favorite');
             return true;
         } catch (err) {
-            // Revert on error
+            // revertar om det smäller
             setFavorites(prev =>
                 wasFavorite ? [...prev, barberId] : prev.filter(id => id !== barberId)
             );

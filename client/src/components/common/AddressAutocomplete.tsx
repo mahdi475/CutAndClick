@@ -1,3 +1,4 @@
+// autocomplete för adresser
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -98,9 +99,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         return () => document.removeEventListener('mousedown', onOutside);
     }, []);
 
-    // ----------------------------------------------------------------
     // Step 1 — Autocomplete search
-    // ----------------------------------------------------------------
     const search = useCallback(async (q: string) => {
         if (q.length < 3) { setSuggestions([]); setLoading(false); return; }
         setLoading(true);
@@ -131,9 +130,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         }
     }, []);
 
-    // ----------------------------------------------------------------
     // Step 2 — Validate selected address (confirm house number exists)
-    // ----------------------------------------------------------------
     const validate = useCallback(async (result: AddressResult): Promise<boolean> => {
         if (!result.address) return true; // No street, skip
         const { address: street, city, postalCode } = result;
@@ -166,9 +163,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         }
     }, []);
 
-    // ----------------------------------------------------------------
     // Handlers
-    // ----------------------------------------------------------------
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setQuery(val);
@@ -197,9 +192,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         onSelect({ ...result, validated: ok });
     };
 
-    // ----------------------------------------------------------------
     // Styling
-    // ----------------------------------------------------------------
     const borderClass = hasError
         ? 'border-red-400'
         : validated === true

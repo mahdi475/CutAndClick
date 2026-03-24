@@ -1,11 +1,9 @@
+// hämtar barbers — alla, sök, nära, specifik med detaljer
 const supabase = require('../config/db');
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800';
 
-// ─────────────────────────────────────────────
-// GET /api/barbers
-// Lista alla barbers med salongsinfo + rating
-// ─────────────────────────────────────────────
+// hämta alla barbers
 async function getAllBarbers(req, res) {
     try {
         const { data, error } = await supabase
@@ -41,10 +39,7 @@ async function getAllBarbers(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// GET /api/barbers/search?q=
-// Sök på salongsnamn eller stad
-// ─────────────────────────────────────────────
+// sök barbers på namn eller stad
 async function searchBarbers(req, res) {
     const q = req.query.q?.trim() || '';
 
@@ -76,10 +71,7 @@ async function searchBarbers(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// GET /api/barbers/nearby?city=
-// Filtrera på stad
-// ─────────────────────────────────────────────
+// filtrera på stad, nearby type shit
 async function getNearbyBarbers(req, res) {
     const city = req.query.city?.trim() || '';
 
@@ -113,16 +105,11 @@ async function getNearbyBarbers(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// GET /api/barbers/:id
-// Detaljer för en specifik barber
-// Returnerar: tjänster + produkter + öppettider
-// ─────────────────────────────────────────────
+// hämta en specifik barber med allt, tjänster produkter öppettider och si och så
 async function getBarberById(req, res) {
     const { id } = req.params;
 
     try {
-        // Hämta barber profil
         const { data: profile, error: profileError } = await supabase
             .from('barber_profiles')
             .select(`
@@ -137,7 +124,6 @@ async function getBarberById(req, res) {
             return res.status(404).json({ error: 'Barber hittades inte' });
         }
 
-        // Hämta tjänster (haircut_posts)
         const { data: services } = await supabase
             .from('haircut_posts')
             .select('id, title, description, price, time_taken, image_url, duration_minutes, is_active')
@@ -145,7 +131,6 @@ async function getBarberById(req, res) {
             .eq('is_active', true)
             .order('created_at', { ascending: false });
 
-        // Hämta produkter (item_posts)
         const { data: products } = await supabase
             .from('item_posts')
             .select('id, title, description, price, status, image_url, category, is_active')
@@ -153,7 +138,6 @@ async function getBarberById(req, res) {
             .eq('is_active', true)
             .order('created_at', { ascending: false });
 
-        // Hämta öppettider
         const { data: openingHours } = await supabase
             .from('opening_hours')
             .select('day_of_week, open_time, close_time, is_closed')
@@ -201,9 +185,7 @@ async function getBarberById(req, res) {
     }
 }
 
-// ─────────────────────────────────────────────
-// Helper: formaterar en barber_profile-rad till frontend-format
-// ─────────────────────────────────────────────
+// helper: gör barber-data snygg för frontend
 function formatBarber(row, favIds = new Set()) {
     const user = row.users;
     return {

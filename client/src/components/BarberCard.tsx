@@ -1,3 +1,4 @@
+// kort som visar en barber — bild, namn, rating, hjärta
 import React from 'react';
 import { Star, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';

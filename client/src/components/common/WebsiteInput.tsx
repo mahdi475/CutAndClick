@@ -1,3 +1,4 @@
+// webbadress-input med validering
 import React, { useState, useEffect } from 'react';
 import { Globe, CheckCircle, XCircle } from 'lucide-react';
 

@@ -1,3 +1,4 @@
+// kalender + tidsslots för bokning
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { Product, Service } from '../types';
@@ -43,13 +44,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ item, onBack, onConfirm }) =>
     const [submitting, setSubmitting] = useState(false);
     const [bookingError, setBookingError] = useState('');
 
-    // haircutId is on the item if it's a Service (has description)
-    // We need it to fetch available slots
+    // haircutId sitter på servicen
+    // behövs för att hämta slots
     const haircutId = item.id;
 
-    // ── Build calendar grid ────────────────────────────────────
+    // bygg kalender
     const firstOfMonth = new Date(viewYear, viewMonth, 1);
-    // JS getDay(): 0=Sun, 1=Mon ... We want Mon=0
+    // getDay() ger 0=sön, vi vill ha mån=0
     const startOffset = (firstOfMonth.getDay() + 6) % 7;
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
@@ -67,7 +68,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ item, onBack, onConfirm }) =>
         calCells.push({ day: i, month: 'next', disabled: true });
     }
 
-    // ── Fetch slots when date changes ──────────────────────────
+    // hämta slots när datum ändras
     useEffect(() => {
         if (!selectedDate) return;
         setSlotsLoading(true);
@@ -86,7 +87,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ item, onBack, onConfirm }) =>
             });
     }, [selectedDate, haircutId]);
 
-    // ── Select a day ───────────────────────────────────────────
+    // välj dag
     const handleDayClick = (cell: typeof calCells[0]) => {
         if (cell.month !== 'curr' || cell.disabled) return;
         setSelectedDay(cell.day);

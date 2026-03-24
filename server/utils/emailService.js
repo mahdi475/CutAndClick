@@ -1,13 +1,10 @@
-// server/utils/emailService.js
-// E-postnotifikationer via Resend (installers: npm install resend)
-// Lägg till RESEND_API_KEY i .env
+// mejl via resend — bokningsbekräftelse och påminnelse
 
 let resendInstance = null;
 
 function getResend() {
     if (resendInstance) return resendInstance;
 
-    // Försök ladda dotenv ifall det inte är laddat än
     require('dotenv').config();
 
     try {
@@ -21,8 +18,7 @@ function getResend() {
     return resendInstance;
 }
 
-// OBS! Om du inte lagt in en egen domän i Resend (t.ex. cutandclick.se),
-// måste du skicka från onboarding@resend.dev under utveckling.
+// utan egen domän skickar man från resend.dev under dev
 const FROM = 'Cut & Click <onboarding@resend.dev>';
 
 async function sendBookingConfirmation({ to, customerName, salonName, date, time, service }) {
@@ -66,7 +62,6 @@ async function sendBookingConfirmation({ to, customerName, salonName, date, time
         console.log(`[Email] Bokningsbekräftelse skickad till ${to}`);
     } catch (err) {
         console.error('[Email] Fel vid skickande:', err.message);
-        // Fail silently — bokningssystemet ska inte krascha pga e-postfel
     }
 }
 

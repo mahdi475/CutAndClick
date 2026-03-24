@@ -1,16 +1,13 @@
+// klippningar + produkter — crud och toggle
 const supabase = require('../config/db');
 
-// ─────────────────────────────────────────────────────────────
-// Helper: verifera att resursen tillhör inloggad barber
-// ─────────────────────────────────────────────────────────────
+// kollar att grejen tillhör rätt barber
 async function ownerCheck(table, id, userId) {
     const { data } = await supabase.from(table).select('user_id').eq('id', id).single();
     return data && data.user_id === userId;
 }
 
-// ─────────────────────────────────────────────────────────────
-// PUBLIK — GET /api/posts/haircuts
-// ─────────────────────────────────────────────────────────────
+// GET /api/posts/haircuts
 async function getAllHaircuts(req, res) {
     const { data, error } = await supabase
         .from('haircut_posts')
@@ -21,9 +18,7 @@ async function getAllHaircuts(req, res) {
     res.status(200).json(data);
 }
 
-// ─────────────────────────────────────────────────────────────
-// PUBLIK — GET /api/posts/items
-// ─────────────────────────────────────────────────────────────
+// GET /api/posts/items
 async function getAllItems(req, res) {
     const { data, error } = await supabase
         .from('item_posts')
@@ -34,9 +29,7 @@ async function getAllItems(req, res) {
     res.status(200).json(data);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — GET /api/posts/my/haircuts  (egna tjänster, inkl inaktiva)
-// ─────────────────────────────────────────────────────────────
+// GET /api/posts/my/haircuts  (egna tjänster, inkl inaktiva)
 async function getMyHaircuts(req, res) {
     const { data, error } = await supabase
         .from('haircut_posts')
@@ -47,9 +40,7 @@ async function getMyHaircuts(req, res) {
     res.status(200).json(data);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — GET /api/posts/my/items  (egna produkter, inkl inaktiva)
-// ─────────────────────────────────────────────────────────────
+// GET /api/posts/my/items  (egna produkter, inkl inaktiva)
 async function getMyItems(req, res) {
     const { data, error } = await supabase
         .from('item_posts')
@@ -60,9 +51,7 @@ async function getMyItems(req, res) {
     res.status(200).json(data);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — POST /api/posts/haircuts
-// ─────────────────────────────────────────────────────────────
+// POST /api/posts/haircuts
 async function createHaircut(req, res) {
     const { title, description, price, time_taken, image_url, duration_minutes } = req.body;
     const user_id = req.user.id;
@@ -91,9 +80,7 @@ async function createHaircut(req, res) {
     res.status(201).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — PUT /api/posts/haircuts/:id
-// ─────────────────────────────────────────────────────────────
+// PUT /api/posts/haircuts/:id
 async function updateHaircut(req, res) {
     const { id } = req.params;
     if (!await ownerCheck('haircut_posts', id, req.user.id)) {
@@ -109,9 +96,7 @@ async function updateHaircut(req, res) {
     res.status(200).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — DELETE /api/posts/haircuts/:id
-// ─────────────────────────────────────────────────────────────
+// DELETE /api/posts/haircuts/:id
 async function deleteHaircut(req, res) {
     const { id } = req.params;
     if (!await ownerCheck('haircut_posts', id, req.user.id)) {
@@ -122,9 +107,7 @@ async function deleteHaircut(req, res) {
     res.status(200).json({ message: 'Tjänst borttagen!' });
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — PATCH /api/posts/haircuts/:id/toggle  (aktiv/inaktiv)
-// ─────────────────────────────────────────────────────────────
+// PATCH /api/posts/haircuts/:id/toggle  (aktiv/inaktiv)
 async function toggleHaircut(req, res) {
     const { id } = req.params;
     const { data: current } = await supabase.from('haircut_posts').select('user_id, is_active').eq('id', id).single();
@@ -140,9 +123,7 @@ async function toggleHaircut(req, res) {
     res.status(200).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — POST /api/posts/items
-// ─────────────────────────────────────────────────────────────
+// POST /api/posts/items
 async function createItem(req, res) {
     const { title, description, price, image_url, category } = req.body;
     const user_id = req.user.id;
@@ -159,9 +140,7 @@ async function createItem(req, res) {
     res.status(201).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — PUT /api/posts/items/:id
-// ─────────────────────────────────────────────────────────────
+// PUT /api/posts/items/:id
 async function updateItem(req, res) {
     const { id } = req.params;
     if (!await ownerCheck('item_posts', id, req.user.id)) {
@@ -177,9 +156,7 @@ async function updateItem(req, res) {
     res.status(200).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — DELETE /api/posts/items/:id
-// ─────────────────────────────────────────────────────────────
+// DELETE /api/posts/items/:id
 async function deleteItem(req, res) {
     const { id } = req.params;
     if (!await ownerCheck('item_posts', id, req.user.id)) {
@@ -190,9 +167,7 @@ async function deleteItem(req, res) {
     res.status(200).json({ message: 'Produkt borttagen!' });
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — PATCH /api/posts/items/:id/toggle
-// ─────────────────────────────────────────────────────────────
+// PATCH /api/posts/items/:id/toggle
 async function toggleItem(req, res) {
     const { id } = req.params;
     const { data: current } = await supabase.from('item_posts').select('user_id, is_active').eq('id', id).single();
@@ -208,10 +183,8 @@ async function toggleItem(req, res) {
     res.status(200).json(data[0]);
 }
 
-// ─────────────────────────────────────────────────────────────
-// BARBER — PATCH /api/bookings/:id/complete (markera utförd)
-// Obs: placerad i postController för enkelhet
-// ─────────────────────────────────────────────────────────────
+// PATCH /api/bookings/:id/complete (markera utförd)
+// ligger här för enkelhet
 async function completeBooking(req, res) {
     const { id } = req.params;
     const { data: booking } = await supabase

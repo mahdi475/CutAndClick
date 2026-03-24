@@ -1,3 +1,4 @@
+// modal för att lämna omdöme
 import React, { useState } from 'react';
 import { X, Star, Loader2 } from 'lucide-react';
 
@@ -40,7 +41,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="w-full bg-white rounded-t-[28px] p-6 pb-10 max-h-[85vh] overflow-y-auto">
+            <div className="w-full bg-white rounded-t-[28px] p-6 pb-10 max-h-[85dvh] overflow-y-auto">
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">

@@ -1,3 +1,4 @@
+// hantera produkter — skapa, redigera, toggla
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Loader2 } from 'lucide-react';
 import ImageUpload from '../../components/common/ImageUpload';
@@ -147,7 +148,7 @@ const BarberProductsPage: React.FC<BarberProductsPageProps> = ({ user }) => {
 
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-                    <div className="w-full bg-white rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto">
+                    <div className="w-full bg-white rounded-t-3xl p-6 max-h-[90dvh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="font-inter font-bold text-[20px]">{editItem ? 'Redigera produkt' : 'Ny produkt'}</h3>
                             <button onClick={() => setShowModal(false)}><X size={22} className="text-gray-400" /></button>

@@ -1,6 +1,7 @@
+// notiser — hämta, markera läst, skapa
 const supabase = require('../config/db');
 
-// GET /api/notifications — mina notifikationer
+// hämta mina notiser
 async function getNotifications(req, res) {
     const user_id = req.user.id;
     try {
@@ -17,7 +18,7 @@ async function getNotifications(req, res) {
     }
 }
 
-// PATCH /api/notifications/:id — markera som läst
+// markera en som läst
 async function markRead(req, res) {
     const user_id = req.user.id;
     const { id } = req.params;
@@ -34,7 +35,7 @@ async function markRead(req, res) {
     }
 }
 
-// PATCH /api/notifications/read-all — markera alla som lästa
+// markera alla som lästa, clean sweep bro
 async function markAllRead(req, res) {
     const user_id = req.user.id;
     try {
@@ -50,7 +51,7 @@ async function markAllRead(req, res) {
     }
 }
 
-// Helper: skapa en in-app notifikation (anropas från andra controllers)
+// helper: skapa notis, andra controllers kallar denna
 async function createNotification({ user_id, type, title, body }) {
     try {
         await supabase.from('notifications').insert([{ user_id, type, title, body }]);

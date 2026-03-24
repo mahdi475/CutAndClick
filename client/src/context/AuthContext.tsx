@@ -1,9 +1,8 @@
+// global auth-state — user, token, login/logout/guest
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../supabase';
 
-// ----------------------------------------
-// Types
-// ----------------------------------------
+// typer
 export interface AuthUser {
     id: string;
     username: string;
@@ -11,7 +10,7 @@ export interface AuthUser {
     token: string | null;
     location?: string;
     profile_pic_url?: string;
-    // Barber-specifikt (platta fält för enkel access)
+    // barber-grejer
     salon_name?: string;
     salon_address?: string;
     city?: string;
@@ -24,27 +23,23 @@ export interface AuthUser {
 
 interface AuthContextType {
     user: AuthUser | null;
-    isLoggedIn: boolean;    // Riktigt inloggad med token
-    isGuest: boolean;       // Gäst-läge (ingen token)
-    isBarber: boolean;      // Inloggad barber
+    isLoggedIn: boolean;    // riktigt inloggad med token
+    isGuest: boolean;       // gäst-läge
+    isBarber: boolean;      // inloggad barber
     login: (token: string, userData: Omit<AuthUser, 'token'>) => void;
     updateUser: (data: Partial<AuthUser>) => void;
     logout: () => void;
     setGuest: () => void;
 }
 
-// ----------------------------------------
-// Context
-// ----------------------------------------
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// ----------------------------------------
-// Provider
-// ----------------------------------------
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
 
-    // Återställ session vid sidladdning
+    // återställ session vid load
     useEffect(() => {
         const savedUser = localStorage.getItem('cut_click_user');
         if (savedUser) {
@@ -58,10 +53,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser({ id: '', username: 'Gäst', role: 'guest', token: null });
         }
 
-        // Lyssna på OAuth-inloggningar från Supabase
+        // lyssna på oauth-logins
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session?.access_token) {
-                // Kolla om vi redan har användaren (för att slippa onödiga anrop)
+                // kolla om vi redan har usern
                 const stored = localStorage.getItem('cut_click_user');
                 if (stored) {
                     try {
@@ -70,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     } catch { }
                 }
 
-                // Synka med backenden!
+                // synka med backend
                 try {
                     const res = await fetch('/api/auth/oauth-sync', {
                         method: 'POST',
@@ -139,9 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 };
 
-// ----------------------------------------
-// Hook
-// ----------------------------------------
+// hook
 export const useAuth = (): AuthContextType => {
     const ctx = useContext(AuthContext);
     if (!ctx) throw new Error('useAuth måste användas inuti AuthProvider');

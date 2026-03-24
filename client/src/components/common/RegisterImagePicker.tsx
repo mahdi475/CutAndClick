@@ -1,3 +1,4 @@
+// välj profilbild vid registrering
 import React, { useState, useRef } from 'react';
 import { Camera, User } from 'lucide-react';
 import { motion } from 'framer-motion';

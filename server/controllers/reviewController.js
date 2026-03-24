@@ -1,6 +1,7 @@
+// omdömen — visa och skapa, kollar att du bokat först
 const supabase = require('../config/db');
 
-// GET /api/reviews/:barberId — publik
+// hämta reviews för en barber, publikt
 async function getReviews(req, res) {
     const { barberId } = req.params;
     try {
@@ -30,18 +31,17 @@ async function getReviews(req, res) {
     }
 }
 
-// POST /api/reviews — kräver inloggning + kund-roll
+// skapa review, måste ha bokat hos barbern först
 async function createReview(req, res) {
     const reviewer_id = req.user.id;
     const { barber_id, stars, review_title, review_description } = req.body;
 
-    // Validering
     if (!barber_id || !stars) return res.status(400).json({ error: 'barber_id och stars är obligatoriska' });
     if (stars < 1 || stars > 5) return res.status(400).json({ error: 'Stars måste vara 1-5' });
     if (review_description && review_description.length > 500) return res.status(400).json({ error: 'Beskrivning max 500 tecken' });
 
     try {
-        // Kontrollera att kunden faktiskt bokat hos denna barber
+        // kolla att kunden faktiskt bokat
         const { data: booking } = await supabase
             .from('bookings')
             .select('id, haircut_posts!inner(user_id)')
@@ -55,24 +55,24 @@ async function createReview(req, res) {
             return res.status(403).json({ error: 'Du måste ha bokat hos denna barber för att lämna ett omdöme' });
         }
 
-        // Kontrollera att kunden inte redan recenserat
+        // kolla att kunden inte redan reviewat
         const { data: existing } = await supabase
             .from('reviews')
             .select('id')
-            .eq('user_id', reviewer_id)   // user_id = reviewer i denna tabell
+            .eq('user_id', reviewer_id)
             .eq('target_user_id', barber_id)
             .single();
 
         if (existing) return res.status(409).json({ error: 'Du har redan lämnat ett omdöme för denna barber' });
 
-        // Spara review (user_id = reviewer, target_user_id = barber)
+        // spara review
         const { error: insertError } = await supabase
             .from('reviews')
             .insert([{ user_id: reviewer_id, target_user_id: barber_id, stars, review_title: review_title || null, review_description: review_description || null }]);
 
         if (insertError) return res.status(400).json({ error: insertError.message });
 
-        // Uppdatera barber_profiles rating + total_reviews
+        // uppdatera barberns rating
         const { data: profile } = await supabase
             .from('barber_profiles')
             .select('rating, total_reviews')

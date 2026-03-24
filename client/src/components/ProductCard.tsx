@@ -1,3 +1,4 @@
+// produktkort med glassmorphism
 import React from 'react';
 import { ShoppingBag, Plus } from 'lucide-react';
 import { Product } from '../types';

@@ -1,3 +1,4 @@
+// bossen av frontend — all navigation, guest guard, tabs
 import React, { useState, useCallback, useEffect } from 'react';
 import { Home, Heart, User, History, LogOut, Lock } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -21,23 +22,19 @@ import { BarberShop, Product, Service } from './types';
 
 type Screen = 'startup' | 'login' | 'register' | 'app' | 'barberDashboard';
 
-// ----------------------------------------
-// Guest-only tabs that require login
-// ----------------------------------------
+// tabs som kräver login
 const PROTECTED_TABS = ['history', 'favourites', 'profile'] as const;
 
-// ----------------------------------------
-// AppInner — inside AuthProvider
-// ----------------------------------------
+// app-wrapper innanför providers
 const AppInner: React.FC = () => {
   const { user, isGuest, setGuest, logout } = useAuth();
 
   const [screen, setScreen] = useState<Screen>('startup');
 
-  // Keep track of whether we've handled the initial load redirection
+  // koll om vi redan hanterat redirect vid load
   const initialLoadHandled = React.useRef(false);
 
-  // Auto-route users when session is restored from localStorage, but ONLY on initial load
+  // auto-route vid session restore, ba vid första load
   useEffect(() => {
     if (user && user.role !== 'guest' && !initialLoadHandled.current) {
       initialLoadHandled.current = true;
@@ -61,7 +58,7 @@ const AppInner: React.FC = () => {
   }, []);
   const hideToast = useCallback(() => setToastVisible(false), []);
 
-  // Navigation state
+  // nav state
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'favourites' | 'profile'>('home');
   const [selectedBarber, setSelectedBarber] = useState<BarberShop | null>(null);
   const [viewingStoreServices, setViewingStoreServices] = useState(false);
@@ -70,7 +67,7 @@ const AppInner: React.FC = () => {
   const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
   const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<{ date: string; time: string } | null>(null);
 
-  // --- Screen Handlers ---
+  // screen handlers
   const handleStartupFinish = () => {
     setScreen('app');
     showToast('Välkommen som gäst');
@@ -79,7 +76,7 @@ const AppInner: React.FC = () => {
   const handleStartupRegister = () => setScreen('login');
 
   const handleLoginSuccess = (username: string, role: 'customer' | 'barber') => {
-    // Navigate based on the passed role, since context 'user' is stale here
+    // routa baserat på roll, context e stale här
     if (role === 'barber') {
       setScreen('barberDashboard');
       showToast(`Välkommen tillbaka, ${username}!`);
@@ -117,13 +114,11 @@ const AppInner: React.FC = () => {
     setIsBookingConfirmed(false);
   };
 
-  // ----------------------------------------
-  // Guest guard helpers
-  // ----------------------------------------
+  // guest guard
   const requireLogin = (action: () => void, reason: string) => {
     if (isGuest) {
       showToast(reason);
-      // Redirect to login after a short delay so toast is visible
+      // vänta lite så toast syns
       setTimeout(() => setScreen('login'), 1500);
       return false;
     }
@@ -131,7 +126,7 @@ const AppInner: React.FC = () => {
     return true;
   };
 
-  // --- Nav Handlers ---
+  // nav handlers
   const handleBarberClick = (barber: BarberShop) => {
     setSelectedBarber(barber);
     setViewingStoreServices(false);
@@ -153,7 +148,7 @@ const AppInner: React.FC = () => {
   const handleItemClick = (item: Product | Service) => setSelectedItem(item);
   const handleBackFromItem = () => { setSelectedItem(null); setIsBooking(false); };
 
-  // Booking requires login
+  // bokning kräver login
   const handleBookNow = () => {
     requireLogin(
       () => setIsBooking(true),
@@ -169,7 +164,7 @@ const AppInner: React.FC = () => {
   };
 
   const handleTabChange = (tab: 'home' | 'history' | 'favourites' | 'profile') => {
-    // Guest guard for protected tabs
+    // guest guard för tabs
     if (isGuest && PROTECTED_TABS.includes(tab as any)) {
       const labels: Record<string, string> = {
         history: 'din bokningshistorik',
@@ -197,9 +192,7 @@ const AppInner: React.FC = () => {
 
   const shouldShowBottomNav = screen === 'app' && !selectedItem && !isBookingConfirmed;
 
-  // ----------------------------------------
-  // Screen: Startup
-  // ----------------------------------------
+  // startup
   if (screen === 'startup') {
     return (
       <>
@@ -209,9 +202,7 @@ const AppInner: React.FC = () => {
     );
   }
 
-  // ----------------------------------------
-  // Screen: Login
-  // ----------------------------------------
+  // login
   if (screen === 'login') {
     return (
       <>
@@ -231,9 +222,7 @@ const AppInner: React.FC = () => {
     );
   }
 
-  // ----------------------------------------
-  // Screen: Register
-  // ----------------------------------------
+  // register
   if (screen === 'register') {
     return (
       <>
@@ -246,9 +235,7 @@ const AppInner: React.FC = () => {
     );
   }
 
-  // ----------------------------------------
-  // Screen: Barber Dashboard (placeholder)
-  // ----------------------------------------
+  // barber dashboard
   if (screen === 'barberDashboard') {
     return (
       <>
@@ -258,9 +245,7 @@ const AppInner: React.FC = () => {
     );
   }
 
-  // ----------------------------------------
-  // Screen: Main App
-  // ----------------------------------------
+  // main app
   const renderContent = () => {
     if (isBookingConfirmed) return <BookingConfirmedPage onHome={handleBackToHome} details={confirmedBookingDetails} item={selectedItem} barber={selectedBarber} />;
     if (isBooking && selectedItem) {
@@ -291,13 +276,13 @@ const AppInner: React.FC = () => {
     return null;
   };
 
-  // Tab active helpers
+  // tab active helper
   const isTabActive = (tab: string) => activeTab === tab && !selectedBarber && !selectedItem;
 
   return (
-    <div className="flex h-screen w-full bg-white lg:bg-gray-100 lg:p-8 font-sans overflow-hidden">
+    <div className="flex h-[100dvh] w-full bg-white lg:bg-gray-100 lg:p-8 font-sans overflow-hidden">
 
-      {/* Desktop Sidebar */}
+      {/* sidebar desktop */}
       <div className="hidden lg:flex flex-col w-64 h-full bg-white rounded-[30px] shadow-sm mr-6 p-6 justify-between flex-shrink-0">
         <div>
           <div className="mb-10 px-4 flex items-center gap-4">
@@ -321,7 +306,7 @@ const AppInner: React.FC = () => {
             </div>
           </div>
           <nav className="flex flex-col gap-2">
-            {/* Home — always accessible */}
+            {/* home */}
             <button
               onClick={() => handleTabChange('home')}
               className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${isTabActive('home') ? 'bg-black text-white' : 'text-[#848282] hover:bg-gray-100'}`}
@@ -329,7 +314,7 @@ const AppInner: React.FC = () => {
               <Home size={22} /><span className="font-inter font-medium text-[15px]">Home</span>
             </button>
 
-            {/* Protected tabs — show lock icon for guests */}
+            {/* skyddade tabs */}
             {(['history', 'favourites', 'profile'] as const).map(tab => {
               const icons = { history: History, favourites: Heart, profile: User };
               const labels = { history: 'History', favourites: 'Favorites', profile: 'Profile' };
@@ -357,7 +342,7 @@ const AppInner: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Content */}
+      {/* content */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-white lg:rounded-[30px] lg:shadow-2xl">
         <div className={`h-full overflow-y-auto no-scrollbar ${shouldShowBottomNav ? 'pb-24 lg:pb-0' : ''}`}>
           <AnimatePresence mode="wait">
@@ -380,27 +365,27 @@ const AppInner: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Mobile Bottom Nav */}
+        {/* mobil nav */}
         {shouldShowBottomNav && (
           <div className="absolute bottom-0 w-full h-[90px] bg-white border-t border-gray-100 flex justify-around items-center px-6 pb-2 z-50 lg:hidden">
-            {/* Home */}
+
             <button onClick={() => handleTabChange('home')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <Home size={24} color={activeTab === 'home' && !selectedBarber && !selectedItem ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'home' && !selectedBarber && !selectedItem ? 2.5 : 2} />
               {(activeTab === 'home' && !selectedBarber && !selectedItem) && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
             </button>
-            {/* History */}
+
             <button onClick={() => handleTabChange('history')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <History size={24} color={activeTab === 'history' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'history' ? 2.5 : 2} />
               {activeTab === 'history' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
-            {/* Favourites */}
+
             <button onClick={() => handleTabChange('favourites')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               <Heart size={24} color={activeTab === 'favourites' ? '#2F2F2F' : '#848282'} strokeWidth={activeTab === 'favourites' ? 2.5 : 2} />
               {activeTab === 'favourites' && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 10 }} className="absolute -bottom-2 w-1.5 h-1.5 bg-[#FF4A4A] rounded-full" />}
               {isGuest && <Lock size={8} className="absolute top-0 right-0 text-black/30" />}
             </button>
-            {/* Profile */}
+
             <button onClick={() => handleTabChange('profile')} className="flex flex-col items-center justify-center w-12 h-12 relative">
               {user?.profile_pic_url ? (
                 <div className={`w-6 h-6 rounded-full overflow-hidden border-2 ${activeTab === 'profile' ? 'border-black' : 'border-gray-300'}`}>

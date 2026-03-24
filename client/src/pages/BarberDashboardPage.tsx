@@ -1,3 +1,4 @@
+// barber-dashboard med sidebar och sub-pages
 import React, { useState } from 'react';
 import { Home, Scissors, ShoppingBag, Calendar, User, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,7 +42,7 @@ const BarberDashboardPage: React.FC<BarberDashboardProps> = ({ onSignOut }) => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#F8F8F8] overflow-hidden">
+        <div className="flex flex-col h-[100dvh] bg-[#F8F8F8] overflow-hidden">
             {/* Content */}
             <div className="flex-1 overflow-y-auto relative bg-[#F8F8F8]">
                 <AnimatePresence mode="wait">

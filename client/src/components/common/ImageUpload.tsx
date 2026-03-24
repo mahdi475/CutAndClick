@@ -1,3 +1,4 @@
+// upload bild till supabase storage
 import React, { useState, useRef } from 'react';
 import { UploadCloud, Loader2, Camera, User } from 'lucide-react';
 import { motion } from 'framer-motion';

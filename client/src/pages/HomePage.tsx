@@ -1,3 +1,4 @@
+// huvudsidan — barber-kort, sök, filter, notiser
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, SlidersHorizontal, X, Bell } from 'lucide-react';
 import BarberCard from '../components/BarberCard';
@@ -6,9 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import { BarberShop } from '../types';
 import { useAuth } from '../context/AuthContext';
 
-// ----------------------------------------
-// Loading skeleton
-// ----------------------------------------
+// loading skeleton
 const BarberSkeleton: React.FC = () => (
   <div className="flex-shrink-0 w-[270px] h-[405px] rounded-[30px] bg-gray-100 animate-pulse md:w-full">
     <div className="w-full h-full rounded-[30px] bg-gradient-to-br from-gray-200 to-gray-100" />
@@ -33,7 +32,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
   const [error, setError] = useState('');
   const [activeFilter, setActiveFilter] = useState('most_viewed');
 
-  // Search state
+  // sök state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<BarberShop[]>([]);
   const [searching, setSearching] = useState(false);
@@ -41,7 +40,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Notifications
+  // notiser
   const [showNotifs, setShowNotifs] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -57,7 +56,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
     return () => clearInterval(interval);
   }, [user?.token]);
 
-  // ── Fetch all barbers on mount (with 5-min sessionStorage cache) ─
+  // hämta barbers med 5 min cache
   const fetchBarbers = useCallback(async (filter: string) => {
     setLoading(true);
     setError('');
@@ -67,13 +66,13 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
         url = `/api/barbers/nearby?city=${encodeURIComponent(user.location)}`;
       }
 
-      // ── Session cache ──────────────────────────────────────────
+      // session cache
       const cacheKey = `cc_barbers_${filter}_${user?.location || 'all'}`;
       try {
         const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < 5 * 60 * 1000) { // 5 min TTL
+          if (Date.now() - ts < 5 * 60 * 1000) { // 5 min ttl
             setBarbers(data);
             setLoading(false);
             return;
@@ -88,7 +87,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
 
       let result: BarberShop[] = data;
 
-      // Client-side sort for 'latest' (API already returns by rating for others)
+      // sortera nyast client-side
       if (filter === 'latest') {
         result = [...result].sort(
           (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
@@ -105,7 +104,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
 
   useEffect(() => { fetchBarbers(activeFilter); }, [activeFilter, fetchBarbers]);
 
-  // ── Debounced search ──────────────────────────────────────────
+  // debounced sök
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -131,7 +130,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
     }, 300);
   };
 
-  // Close dropdown on outside click
+  // stäng dropdown vid klick utanför
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -256,7 +255,7 @@ const HomePage: React.FC<HomePageProps> = ({ onBarberClick }) => {
       {/* Barber Cards */}
       <div className="pl-7 mt-8 pb-10 flex overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain no-scrollbar pr-7 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 md:pl-7 md:pr-7 md:pb-12 md:overflow-visible">
         {loading ? (
-          // Loading skeletons
+          // loading skeletons
           [1, 2, 3].map(i => (
             <div key={i} className="flex-shrink-0 mr-6 md:mr-0 snap-center md:w-full">
               <BarberSkeleton />

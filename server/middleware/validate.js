@@ -1,20 +1,19 @@
-// server/middleware/validate.js
-// Input-validering med express-validator
+// input-validering med express-validator
 const { body, validationResult } = require('express-validator');
 
-// ── Hjälpare: returnera fel om validering failar ───────────────
+// returnerar felet om validering smäller
 function handleValidation(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            error: errors.array()[0].msg,   // Returnera första felet
+            error: errors.array()[0].msg,
             details: errors.array(),
         });
     }
     next();
 }
 
-// ── registerUser ───────────────────────────────────────────────
+// register validering
 const validateRegister = [
     body('email')
         .isEmail()
@@ -32,7 +31,7 @@ const validateRegister = [
     handleValidation,
 ];
 
-// ── createBooking ──────────────────────────────────────────────
+// booking validering
 const validateBooking = [
     body('haircut_id')
         .notEmpty()
@@ -51,7 +50,7 @@ const validateBooking = [
     handleValidation,
 ];
 
-// ── createReview ───────────────────────────────────────────────
+// review validering
 const validateReview = [
     body('barber_id')
         .notEmpty()
@@ -70,7 +69,7 @@ const validateReview = [
     handleValidation,
 ];
 
-// ── createHaircut / createItem ─────────────────────────────────
+// haircut/item validering
 const validateHaircut = [
     body('title')
         .trim()

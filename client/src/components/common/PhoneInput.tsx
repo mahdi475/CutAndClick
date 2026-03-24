@@ -1,3 +1,4 @@
+// telefoninput med landskod
 import React, { useState, useEffect } from 'react';
 import { Phone, CheckCircle, XCircle } from 'lucide-react';
 
