@@ -1,8 +1,8 @@
 // bokningar — lediga tider, skapa, avboka, hämta
 const supabase = require('../config/db');
 
-// helper: genererar tidsslots mellan öppning och stängning type shit
-// typ ('09:00', '17:00', 60) → ['09:00', '10:00', ..., '16:00']
+// helper: genererar tidsslots mellan öppning och stängning
+// t.ex. ('09:00', '17:00', 60) → ['09:00', '10:00', ..., '16:00']
 function generateSlots(open, close, intervalMinutes = 60) {
     const slots = [];
     let [h, m] = open.split(':').map(Number);
@@ -18,7 +18,7 @@ function generateSlots(open, close, intervalMinutes = 60) {
 // dag-namn helper
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 function getDayName(dateStr) {
-    const d = new Date(dateStr + 'T12:00:00'); // midday så tz inte bugar
+    const d = new Date(dateStr + 'T12:00:00'); // mitt på dagen så att tidszonen inte ger fel datum
     return DAY_NAMES[d.getDay()];
 }
 
@@ -50,14 +50,14 @@ async function getAvailableSlots(req, res) {
             .eq('day_of_week', dayName)
             .single();
 
-        // stängt den dagen bror
+        // stängt den dagen
         if (hoursErr || !hours || hours.is_closed || !hours.open_time || !hours.close_time) {
             return res.status(200).json({ date, available: [], closed: true });
         }
 
         const allSlots = generateSlots(hours.open_time, hours.close_time, durationMinutes);
 
-        // kolla vilka tider som redan e bokade
+        // kolla vilka tider som redan är bokade
         const { data: bookings, error: bErr } = await supabase
             .from('bookings')
             .select('booking_time, haircut_posts!inner(user_id)')
@@ -76,7 +76,7 @@ async function getAvailableSlots(req, res) {
     }
 }
 
-// skapa bokning, måste va inloggad
+// skapa bokning, kräver inloggning
 async function createBooking(req, res) {
     const { haircut_id, booking_date, booking_time } = req.body;
     const customer_id = req.user.id;
@@ -86,7 +86,7 @@ async function createBooking(req, res) {
     }
 
     try {
-        // kan inte boka bakåt i tiden bro
+        // kan inte boka bakåt i tiden
         if (new Date(booking_date) < new Date(new Date().toDateString())) {
             return res.status(400).json({ error: 'Du kan inte boka ett datum som redan passerat' });
         }
@@ -218,7 +218,7 @@ async function getUserBookings(req, res) {
     }
 }
 
-// avboka, cancel type shit
+// avboka en bokning
 async function cancelBooking(req, res) {
     const { id } = req.params;
     const customer_id = req.user.id;
@@ -235,7 +235,7 @@ async function cancelBooking(req, res) {
         if (booking.customer_id !== customer_id) return res.status(403).json({ error: 'Du kan bara avboka dina egna bokningar' });
         if (booking.status === 'cancelled') return res.status(400).json({ error: 'Bokningen är redan avbokad' });
 
-        // kan inte avboka nåt som redan hänt
+        // kan inte avboka något som redan har hänt
         if (new Date(booking.booking_date) < new Date(new Date().toDateString())) {
             return res.status(400).json({ error: 'Du kan inte avboka en bokning som redan passerat' });
         }

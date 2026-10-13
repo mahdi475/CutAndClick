@@ -26,3 +26,7 @@ server/.env
 .DS_Store
 Thumbs.db
 .vercel
+
+# Local debug output (never commit user data)
+server/output.*
+*dump*.txt

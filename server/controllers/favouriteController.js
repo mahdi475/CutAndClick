@@ -54,7 +54,7 @@ async function addFavourite(req, res) {
             .single();
 
         if (error) {
-            // 23505 = redan i favs, lugn bro
+            // 23505 = finns redan bland favoriterna
             if (error.code === '23505') return res.status(200).json({ message: 'Redan i favoriter' });
             return res.status(400).json({ error: error.message });
         }

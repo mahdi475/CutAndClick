@@ -9,7 +9,7 @@ const {
 } = require('../controllers/barberController');
 const { optionalProtect } = require('../middleware/authMiddleware');
 
-// specifika routes före :id, annars bugar det bro
+// specifika routes före :id, annars matchar fel route
 router.get('/search', optionalProtect, searchBarbers);
 router.get('/nearby', optionalProtect, getNearbyBarbers);
 router.get('/', optionalProtect, getAllBarbers);

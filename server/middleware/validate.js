@@ -1,7 +1,7 @@
 // input-validering med express-validator
 const { body, validationResult } = require('express-validator');
 
-// returnerar felet om validering smäller
+// returnerar felet om valideringen misslyckas
 function handleValidation(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

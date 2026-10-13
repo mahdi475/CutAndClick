@@ -39,7 +39,7 @@ async function updateOpeningHours(req, res) {
     const user_id = req.user.id;
     const hours = req.body; // array
 
-    // kolla att det e en array
+    // kolla att det är en array
     if (!Array.isArray(hours)) {
         return res.status(400).json({ error: 'Body måste vara en array av öppettider' });
     }

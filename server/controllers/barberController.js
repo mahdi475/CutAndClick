@@ -71,7 +71,7 @@ async function searchBarbers(req, res) {
     }
 }
 
-// filtrera på stad, nearby type shit
+// barbers i närheten, filtrerat på stad
 async function getNearbyBarbers(req, res) {
     const city = req.query.city?.trim() || '';
 
@@ -105,7 +105,7 @@ async function getNearbyBarbers(req, res) {
     }
 }
 
-// hämta en specifik barber med allt, tjänster produkter öppettider och si och så
+// hämta en barber med tjänster, produkter och öppettider
 async function getBarberById(req, res) {
     const { id } = req.params;
 

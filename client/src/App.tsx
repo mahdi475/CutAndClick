@@ -34,7 +34,7 @@ const AppInner: React.FC = () => {
   // koll om vi redan hanterat redirect vid load
   const initialLoadHandled = React.useRef(false);
 
-  // auto-route vid session restore, ba vid första load
+  // auto-route när sessionen återställs, bara vid första laddningen
   useEffect(() => {
     if (user && user.role !== 'guest' && !initialLoadHandled.current) {
       initialLoadHandled.current = true;
@@ -76,7 +76,7 @@ const AppInner: React.FC = () => {
   const handleStartupRegister = () => setScreen('login');
 
   const handleLoginSuccess = (username: string, role: 'customer' | 'barber') => {
-    // routa baserat på roll, context e stale här
+    // routa baserat på roll (context är inte uppdaterad än här)
     if (role === 'barber') {
       setScreen('barberDashboard');
       showToast(`Välkommen tillbaka, ${username}!`);

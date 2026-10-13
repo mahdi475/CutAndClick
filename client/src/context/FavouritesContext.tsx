@@ -68,7 +68,7 @@ export const FavouritesProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             if (!res.ok) throw new Error('Failed to toggle favorite');
             return true;
         } catch (err) {
-            // revertar om det smäller
+            // återställ om anropet misslyckas
             setFavorites(prev =>
                 wasFavorite ? [...prev, barberId] : prev.filter(id => id !== barberId)
             );

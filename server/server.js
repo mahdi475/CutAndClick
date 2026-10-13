@@ -18,12 +18,12 @@ async function verifyDb() {
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 verifyDb();
 
-// hämtar dörrvakten bro
+// auth-middleware
 const { protect } = require('./middleware/authMiddleware');
 
-// test-route, ba inloggade slipper in
+// test-route, bara för inloggade
 app.get('/api/test-hidden', protect, (req, res) => {
-    // om du e här så släppte protect dig, safe
+    // hit kommer man bara om protect godkände token
     res.json({
         message: 'Du är inloggad och dörrvakten släppte in dig!',
         din_info: req.user

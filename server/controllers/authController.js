@@ -2,14 +2,14 @@
 const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/db');
 
-// registrering bror
+// registrering
 async function registerUser(req, res) {
     const { email, password, username, location, role, salon_name, salon_address, city, phone } = req.body;
 
     const validRole = role === 'barber' ? 'barber' : 'customer';
 
     try {
-        // temp klient så vi inte smutsar ner admin-klienten type shit
+        // tillfällig klient så att admin-klienten inte påverkas
         const tempSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
             auth: { persistSession: false }
         });
@@ -20,13 +20,13 @@ async function registerUser(req, res) {
             email,
             password,
             options: {
-                data: { role: validRole } // sparar rollen i metadata, snabbare sen yani
+                data: { role: validRole } // sparar rollen i metadata för snabbare uppslag
             }
         });
         authData = signupRes.data;
         authError = signupRes.error;
 
-        // fallback om rate limit smäller, kör admin api istället
+        // fallback om rate limit slår till: använd admin-API:t
         if (authError && authError.message.includes('rate limit')) {
             console.log("Rate limit hit during signUp, forcing creation via admin API...");
             const adminRes = await supabase.auth.admin.createUser({
@@ -105,12 +105,12 @@ async function registerUser(req, res) {
     }
 }
 
-// inloggning mannen
+// inloggning
 async function loginUser(req, res) {
     const { email, password } = req.body;
 
     try {
-        // ny temp klient igen, vill inte störa admin-klienten ykwim
+        // tillfällig klient så att admin-klienten inte påverkas
         const tempSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
             auth: { persistSession: false }
         });
@@ -154,7 +154,7 @@ async function loginUser(req, res) {
     }
 }
 
-// logga ut ba
+// logga ut
 async function logoutUser(req, res) {
     try {
         const { error } = await supabase.auth.signOut();
@@ -252,7 +252,7 @@ async function updateProfile(req, res) {
     }
 }
 
-// oauth sync - skapar konto i db om det inte finns, fr fr
+// OAuth-synk: skapar användaren i databasen om den inte finns
 async function oauthSync(req, res) {
     const authUser = req.user;
     const user_id = authUser.id;

@@ -35,7 +35,7 @@ async function markRead(req, res) {
     }
 }
 
-// markera alla som lästa, clean sweep bro
+// markera alla som lästa
 async function markAllRead(req, res) {
     const user_id = req.user.id;
     try {
